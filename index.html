@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elektroplanung – Grundriss</title>
+<style>
+  :root{
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace;
+    --line:#d7dbdf; --line2:#e4e7ea; --ink:#1c2024; --ink2:#374151; --mut:#9aa1a8; --mut2:#6b7280;
+    --hi:#eef1f4; --accent:#2563eb;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:var(--sans);color:var(--ink);background:#e9ebee;overflow:hidden;-webkit-font-smoothing:antialiased}
+  input,select,textarea,button{font-family:inherit}
+  input:focus,select:focus,textarea:focus{border-color:#9aa3ad}
+  button{font-family:inherit}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#c7cdd3;border-radius:6px;border:2px solid #fff}
+  .app{display:flex;flex-direction:column;height:100vh;user-select:none}
+  .topbar{height:54px;flex:none;display:flex;align-items:center;gap:16px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);z-index:5}
+  .tbtn{display:flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--line);background:#fff;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink2);cursor:pointer;white-space:nowrap}
+  .tbtn:hover{background:#f6f7f8}
+  .tbtn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .meta{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;color:#5b636b}
+  .body{flex:1;display:flex;min-height:0}
+  .left{width:222px;flex:none;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto}
+  .right{width:344px;flex:none;background:#fff;border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .sechead{font-size:10px;font-weight:700;letter-spacing:.09em;color:var(--mut);padding:0 6px 8px}
+  .toolrow{display:flex;align-items:center;gap:10px;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:#3a4250}
+  .toolrow:hover{background:#f6f7f8}
+  .toolrow.active{background:var(--hi);font-weight:600}
+  .toolrow .ic{display:flex;width:24px;height:22px;align-items:center;justify-content:center;flex:none}
+  .toolrow .key{font-family:var(--mono);font-size:11px;color:#b4bac0}
+  .field-label{display:block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin-bottom:5px}
+  .inp{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:13.5px;outline:none;background:#fff}
+  .sel{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;background:#fff;outline:none;color:var(--ink2)}
+  .canvas{flex:1;position:relative;min-width:0;background:#f4f5f6;overflow:hidden;touch-action:none}
+  .scene{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+  .scene img{position:absolute;left:0;top:0;user-select:none;pointer-events:none}
+  .scene svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+  .zoombar{position:absolute;left:14px;bottom:14px;display:flex;gap:6px;background:#fff;padding:6px;border-radius:9px;border:1px solid var(--line);box-shadow:0 2px 8px rgba(20,25,30,.07)}
+  .zoombar button{height:30px;border:0;background:#f1f3f5;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink2);padding:0 12px}
+  .zoombar button.sq{width:30px;padding:0;font-size:17px}
+  .floorbar{position:absolute;top:14px;left:14px;display:flex;align-items:center;gap:4px;background:#fff;padding:5px 7px;border-radius:9px;border:1px solid var(--line);box-shadow:0 2px 8px rgba(20,25,30,.07);max-width:calc(100% - 28px);overflow-x:auto}
+  .floorbar .lbl{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--mut);padding:0 4px;flex:none}
+  .floorbar .ftab{height:30px;padding:0 12px;border:0;background:transparent;border-radius:6px;font-size:12.5px;font-weight:500;color:var(--ink2);cursor:pointer;white-space:nowrap;flex:none}
+  .floorbar .ftab:hover{background:#f1f3f5}
+  .floorbar .fgrp{display:flex;align-items:center;background:#eef1f4;border-radius:6px;flex:none}
+  .floorbar .fname{height:30px;border:0;background:transparent;font-size:12.5px;font-weight:600;color:var(--ink);padding:0 6px 0 10px;outline:none;min-width:64px;max-width:150px;width:90px}
+  .floorbar .addf{height:30px;width:30px;padding:0;font-size:17px;font-weight:700;border:0;background:#f1f3f5;border-radius:6px;cursor:pointer;color:var(--ink2);flex:none}
+  .hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(28,32,36,.92);color:#fff;padding:8px 15px;border-radius:8px;font-size:12.5px;font-weight:500;box-shadow:0 3px 12px rgba(0,0,0,.18);white-space:nowrap;pointer-events:none;z-index:3}
+  .dropzone{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:var(--mut);text-align:center;padding:40px}
+  .dropzone .box{border:2.5px dashed #c2c8ce;border-radius:18px;padding:46px 60px;background:rgba(255,255,255,.5);max-width:520px;transition:.12s}
+  .dropzone.over .box{border-color:var(--accent);background:rgba(37,99,235,.06)}
+  .tabbtn{padding:8px 14px;border:0;border-radius:7px 7px 0 0;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--mut);border-bottom:2px solid transparent}
+  .tabbtn.active{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
+  .scrollbody{flex:1;overflow-y:auto;min-height:0}
+  .stat{flex:1;background:#f6f7f8;border-radius:9px;padding:11px 12px}
+  .stat .k{font-size:10.5px;color:var(--mut);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .stat .v{font-size:21px;font-weight:600;font-family:var(--mono)}
+  .row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f9fafb;border-radius:8px}
+  .listrow{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:7px;cursor:pointer}
+  .listrow:hover{background:#f6f7f8}
+  .modal-bg{position:fixed;inset:0;background:rgba(28,32,36,.28);display:flex;align-items:center;justify-content:center;z-index:40}
+  .modal{background:#fff;border-radius:12px;padding:22px;width:320px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;transition:.2s;pointer-events:none}
+  .toast.show{opacity:1}
+  .dot{width:11px;height:11px;border-radius:3px;flex:none}
+  .iconbtn{width:22px;height:22px;border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:5px;flex:none;color:#9aa1a8}
+  .iconbtn:hover{background:#eef0f2;color:var(--ink2)}
+  @media print{
+    .topbar,.left,.right,.zoombar,.floorbar,.hint,.dropzone,.scrim,.mobtoggle{display:none!important}
+    .app,.body,.canvas{position:static;height:auto;overflow:visible}
+    .canvas{background:#fff}
+    body.printVerteiler .app{display:none!important}
+    body.printVerteiler #verteilerOverlay{position:static!important;display:block!important;background:#fff;overflow:visible}
+    body.printVerteiler #verteilerOverlay .v-sheet{box-shadow:none!important;margin:0!important;max-width:none!important}
+    body.printVerteiler .v-noprint{display:none!important}
+    body.printVerteiler .v-printonly{display:block!important}
+    body.printSheet .app{display:none!important}
+    body.printSheet #sheetOverlay{position:static!important;display:block!important;background:#fff;overflow:visible;padding:0!important}
+    body.printSheet #sheetOverlay .v-sheet{box-shadow:none!important;margin:0!important;max-width:none!important}
+    body.printSheet .v-noprint{display:none!important}
+  }
+  .mobtoggle{display:none}
+  .scrim{position:fixed;inset:0;background:rgba(20,25,30,.4);z-index:14;display:none}
+  .scrim.show{display:block}
+  @media (max-width:900px){
+    .topbar{height:auto;min-height:50px;flex-wrap:wrap;padding:7px 10px;gap:8px}
+    .topbar .hide-sm{display:none!important}
+    .mobtoggle{display:flex!important;align-items:center;justify-content:center;width:40px;height:34px;padding:0;font-size:18px}
+    .left,.right{position:fixed;top:0;bottom:0;z-index:15;box-shadow:0 0 50px rgba(0,0,0,.22);transition:transform .24s ease}
+    .left{left:0;width:min(86vw,300px);transform:translateX(-103%)}
+    .right{right:0;width:min(92vw,366px);transform:translateX(103%)}
+    .left.open,.right.open{transform:translateX(0)}
+  }
+  @media (min-width:901px){ .left,.right{transform:none!important} .scrim{display:none!important} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button class="tbtn mobtoggle" id="mobLeft" title="Werkzeuge">☰</button>
+    <div style="display:flex;align-items:baseline;gap:9px">
+      <span style="font-weight:700;font-size:15px">Elektroplanung</span>
+    </div>
+    <div class="hide-sm" style="width:1px;height:24px;background:var(--line2)"></div>
+    <div id="projektBar" style="display:flex;align-items:center;gap:7px"></div>
+    <div class="hide-sm" style="width:1px;height:24px;background:var(--line2)"></div>
+    <div class="meta hide-sm"><span style="color:var(--mut)">Maßstab</span><span id="lblScale" style="color:var(--ink);font-weight:500">—</span></div>
+    <div class="meta hide-sm"><span style="color:var(--mut)">Zoom</span><span id="lblZoom" style="color:var(--ink);font-weight:500">—</span></div>
+    <div style="flex:1"></div>
+    <div class="hide-sm" style="display:flex;align-items:center;gap:9px;margin-right:2px">
+      <span style="font-size:12px;color:var(--mut)">Plan</span>
+      <input id="opacity" type="range" min="0.15" max="1" step="0.05" value="1" style="width:80px;accent-color:#6b7280">
+    </div>
+    <span id="saveStatus" style="font-size:12px;color:var(--mut);min-width:96px;text-align:right;white-space:nowrap"></span>
+    <button class="tbtn" id="btnImport" title="Grundriss für die aktive Etage importieren">⤒ Plan importieren</button>
+    <button class="tbtn" id="btnUndo" title="Rückgängig (Strg+Z)">↺ Zurück</button>
+    <button class="tbtn" id="btnRedo" title="Wiederherstellen (Strg+Umschalt+Z / Strg+Y)">↻ Vor</button>
+    <button class="tbtn" id="btnPng">⤓ PNG</button>
+    <button class="tbtn" id="btnCsv">⤓ CSV</button>
+    <button class="tbtn" id="btnVerteiler" title="Verteiler-/Stromlaufplan">☷ Verteiler</button>
+    <button class="tbtn" id="btnSection" title="Gebäudeschnitt / Steigstränge über alle Etagen">⇕ Schnitt</button>
+    <button class="tbtn" id="btnLegend" title="Symbol-Legende">◈ Legende</button>
+    <button class="tbtn" id="btnPrint">⎙ PDF</button>
+    <button class="tbtn mobtoggle" id="mobRight" title="Eigenschaften & Stromkreise">▤</button>
+  </header>
+
+  <div class="body">
+    <aside class="left" id="leftPanel"></aside>
+
+    <main class="canvas" id="canvasArea">
+      <div class="scene" id="scene">
+        <img id="planImg" alt="" draggable="false" style="display:none">
+        <svg id="overlay"></svg>
+      </div>
+      <div class="dropzone" id="dropzone">
+        <div class="box">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#aab0b6" stroke-width="1.5" style="margin-bottom:14px">
+            <path d="M3 16.5V18a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5"/><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/>
+          </svg>
+          <div style="font-size:15px;font-weight:600;color:var(--ink2)">Grundriss importieren</div>
+          <div id="dropHint" style="font-size:13px;line-height:1.55;margin-top:8px">Bild hierher ziehen oder <b style="color:var(--accent)">zum Auswählen klicken</b><br>PNG · JPG · SVG · WEBP</div>
+        </div>
+      </div>
+      <div class="floorbar" id="floorBar"></div>
+      <div class="zoombar">
+        <button class="sq" id="zOut">−</button>
+        <button id="zFit">Einpassen</button>
+        <button class="sq" id="zIn">+</button>
+      </div>
+      <div class="hint" id="hint" style="display:none"></div>
+    </main>
+
+    <aside class="right">
+      <div style="display:flex;padding:10px 12px 0;gap:4px;flex:none">
+        <button class="tabbtn active" id="tabProps">Eigenschaften</button>
+        <button class="tabbtn" id="tabList">Stückliste</button>
+        <button class="tabbtn" id="tabCheck">Prüfung<span id="checkBadge" style="display:none;margin-left:6px;font-size:10.5px;font-weight:700;font-family:var(--mono);color:#fff;background:#c0322a;border-radius:9px;padding:1px 6px;vertical-align:1px"></span></button>
+      </div>
+      <div style="height:1px;background:var(--line2);flex:none"></div>
+      <div class="scrollbody" id="rightBody"></div>
+      <div style="border-top:1px solid var(--line2);padding:12px 16px 14px;flex:none;background:#fbfcfc">
+        <div style="display:flex;align-items:center;margin-bottom:9px">
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--mut);flex:1">STROMKREISE</span>
+          <button class="tbtn" id="addCircuit" style="height:26px;padding:0 10px;font-size:12px">+ Neu</button>
+        </div>
+        <div id="circuitList" style="display:flex;flex-direction:column;gap:4px;max-height:172px;overflow-y:auto"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+<input type="file" id="fileInput" accept="image/*" hidden>
+<div class="scrim" id="scrim"></div>
+<div id="calibHost"></div>
+<div id="verteilerHost"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const SVGNS='http://www.w3.org/2000/svg';
+const SVG_TAGS=new Set(['svg','g','path','line','circle','rect','text','polyline','polygon','ellipse','tspan','defs','use']);
+const ATTR={strokeWidth:'stroke-width',strokeLinejoin:'stroke-linejoin',strokeLinecap:'stroke-linecap',strokeDasharray:'stroke-dasharray',textAnchor:'text-anchor',dominantBaseline:'dominant-baseline',fontSize:'font-size',fontWeight:'font-weight',fontFamily:'font-family',fillOpacity:'fill-opacity',strokeOpacity:'stroke-opacity'};
+function h(tag,props){
+  const kids=[].slice.call(arguments,2);
+  const el=SVG_TAGS.has(tag)?document.createElementNS(SVGNS,tag):document.createElement(tag);
+  if(props) for(const k in props){
+    const v=props[k]; if(v==null||v===false) continue;
+    if(k==='style'&&typeof v==='object'){ for(const s in v) el.style[s]=v[s]; }
+    else if(k==='className') el.setAttribute('class',v);
+    else if(k.slice(0,2)==='on'&&typeof v==='function') el.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(typeof v==='function') continue;
+    else el.setAttribute(ATTR[k]||k,v);
+  }
+  flatAppend(el,kids); return el;
+}
+function flatAppend(el,kids){ for(const c of kids){ if(c==null||c===false) continue; if(Array.isArray(c)) flatAppend(el,c); else el.appendChild(c.nodeType?c:document.createTextNode(String(c))); } }
+function clear(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+
+/* ============== Daten ============== */
+const PALETTE=['#2563eb','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#0d9488','#9333ea'];
+const TYPES={
+  lichtquelle:{name:'Lichtquelle (Decke)',prefix:'L'}, lichtquelle_dim:{name:'Lichtquelle dimmbar',prefix:'LD'}, lichtquelle_wand:{name:'Lichtquelle Wand',prefix:'WL'},
+  schalter:{name:'Lichtschalter',prefix:'S'}, taster:{name:'Taster',prefix:'T'}, taster4:{name:'Taster 4-fach',prefix:'T4'},
+  steckdose:{name:'Steckdose',prefix:'SD'}, steckdose2:{name:'Steckdose 2-fach',prefix:'SD2'}, steckdose5:{name:'Steckdose 5-fach',prefix:'SD5'}, steckdose_schalt:{name:'Steckdose schaltbar',prefix:'SDS'}, steckdose_stark:{name:'Starkstrom 400V',prefix:'ST'},
+  bewegungsmelder:{name:'Bewegungsmelder',prefix:'BM'}, praesenzmelder:{name:'Präsenzmelder',prefix:'PM'}, rauchmelder:{name:'Rauchmelder',prefix:'RM'}, hitzemelder:{name:'Hitzemelder',prefix:'HM'}, temperatur:{name:'Temperaturfühler',prefix:'TF'},
+  fensterkontakt:{name:'Fensterkontakt',prefix:'FK'}, tuerkontakt:{name:'Türkontakt',prefix:'TK'}, erollladen:{name:'E-Rollladen',prefix:'RL'}, markise:{name:'Markise',prefix:'MK'},
+  audio:{name:'Audio / Lautsprecher',prefix:'AU'}, audiobuchse:{name:'Audiobuchse',prefix:'AB'}, hdmi:{name:'HDMI',prefix:'HD'}, tv:{name:'TV-Anschluss',prefix:'TV'},
+  lan:{name:'LAN (Netzwerk)',prefix:'LAN'}, lan2:{name:'LAN 2-fach',prefix:'LAN2'}, wlan:{name:'WLAN-Hotspot',prefix:'AP'}, wetterstation:{name:'Wetterstation',prefix:'WS'},
+  heizkreisverteiler:{name:'Heizkreisverteiler',prefix:'HKV'}, gong:{name:'Gong',prefix:'GO'}, junction:{name:'Verteiler / Abzweigdose',prefix:'V'},
+  unterverteiler:{name:'Unterverteiler (UV)',prefix:'UV'}, durchfuehrung:{name:'Durchführung (Steigpunkt)',prefix:'DF'},
+  tablet:{name:'Tablet / Bedienpanel',prefix:'TAB'}, tuerklingel:{name:'Türklingel',prefix:'KL'}, kamera:{name:'Überwachungskamera',prefix:'CAM'},
+  herd:{name:'Herd',prefix:'HRD'}, ofen:{name:'Backofen',prefix:'OFN'}, waschmaschine:{name:'Waschmaschine',prefix:'WM'}, trockner:{name:'Trockner',prefix:'TRK'}, kuehlschrank:{name:'Kühlschrank',prefix:'KS'},
+  ceiling:{name:'Lichtquelle (Decke)',prefix:'L'}, wall:{name:'Lichtquelle Wand',prefix:'WL'}, socket:{name:'Steckdose',prefix:'SD'}, sensor:{name:'Bewegungsmelder',prefix:'BM'},
+};
+const CATS=[
+  {name:'Beleuchtung',keys:['lichtquelle','lichtquelle_dim','lichtquelle_wand']},
+  {name:'Schalter & Taster',keys:['schalter','taster','taster4']},
+  {name:'Steckdosen',keys:['steckdose','steckdose2','steckdose5','steckdose_schalt','steckdose_stark']},
+  {name:'Melder & Fühler',keys:['bewegungsmelder','praesenzmelder','rauchmelder','hitzemelder','temperatur']},
+  {name:'Kontakte & Antrieb',keys:['fensterkontakt','tuerkontakt','erollladen','markise']},
+  {name:'Multimedia',keys:['audio','audiobuchse','hdmi','tv']},
+  {name:'Netzwerk',keys:['lan','lan2','wlan','wetterstation']},
+  {name:'Verteilung',keys:['heizkreisverteiler','gong','junction']},
+  {name:'Verteiler & Steigpunkte',keys:['unterverteiler','durchfuehrung']},
+  {name:'Tür & Sicherheit',keys:['tuerklingel','kamera','tablet']},
+  {name:'Geräte / Großverbraucher',keys:['herd','ofen','kuehlschrank','waschmaschine','trockner']},
+];
+const CABLE_TYPES=[
+  {id:'knx',name:'KNX Bus',short:'KNX',dash:'2 7'},
+  {id:'audio',name:'Steuerkabel Audio',short:'Audio',dash:'10 6'},
+  {id:'nym15',name:'NYM-J 3×1,5 mm²',short:'3×1,5',dash:'none'},
+  {id:'nym25',name:'NYM-J 3×2,5 mm²',short:'3×2,5',dash:'none'},
+  {id:'nym5x15',name:'NYM-J 5×1,5 mm²',short:'5×1,5',dash:'none'},
+  {id:'nym5x25',name:'NYM-J 5×2,5 mm²',short:'5×2,5',dash:'none'},
+  {id:'stark',name:'Starkstrom 5×6 mm²',short:'5×6',dash:'none'},
+  {id:'cat7',name:'CAT7 (einfach)',short:'CAT7',dash:'14 5 2 5'},
+  {id:'cat7x2',name:'CAT7 (doppelt)',short:'CAT7×2',dash:'14 5 2 5'},
+  {id:'sat',name:'SAT-Koaxialkabel',short:'SAT',dash:'3 4'},
+];
+const CABLE_BY_ID=Object.fromEntries(CABLE_TYPES.map(c=>[c.id,c]));
+const WALL_TYPES=new Set(['schalter','taster','taster4','steckdose','steckdose2','steckdose5','steckdose_schalt','steckdose_stark','lichtquelle_wand','tablet','tuerklingel','kamera','heizkreisverteiler','herd','ofen','waschmaschine','trockner','kuehlschrank','audiobuchse','hdmi','tv','lan','lan2']);
+const DEFAULT_HEIGHT={schalter:'105',taster:'105',taster4:'105',steckdose:'30',steckdose2:'30',steckdose5:'30',steckdose_schalt:'30',steckdose_stark:'30',lichtquelle_wand:'200',tablet:'150',tuerklingel:'140',kamera:'230',herd:'30',ofen:'150',waschmaschine:'110',trockner:'110',kuehlschrank:'30',tv:'120',hdmi:'120',audiobuchse:'30',lan:'30',lan2:'30',heizkreisverteiler:'60'};
+/* Raumtypen (DIN 18015-2 Mindestausstattung / DIN 14676 Rauchmelder).
+   feucht  -> RCD 30 mA Pflicht (DIN VDE 0100-410/-701)
+   schlaf  -> Rauchmelderpflicht (Schlafen/Kinder)
+   rettung -> Rauchmelderpflicht (Flure als Rettungsweg)
+   minSteckdosen / minLicht -> Mindestausstattung nach DIN 18015-2 (Richtwerte) */
+const ROOM_TYPES={
+  wohnen:{name:'Wohnen',color:'#2563eb',minSteckdosen:5,minLicht:1},
+  essen:{name:'Essen',color:'#0891b2',minSteckdosen:3,minLicht:1},
+  schlafen:{name:'Schlafen',color:'#7c3aed',minSteckdosen:3,minLicht:1,schlaf:true},
+  kind:{name:'Kinderzimmer',color:'#db2777',minSteckdosen:3,minLicht:1,schlaf:true},
+  kueche:{name:'Küche',color:'#d97706',minSteckdosen:5,minLicht:1,feucht:true},
+  bad:{name:'Bad / WC',color:'#0d9488',minSteckdosen:2,minLicht:1,feucht:true,rettung:false},
+  flur:{name:'Flur / Diele',color:'#65a30d',minSteckdosen:1,minLicht:1,rettung:true},
+  buero:{name:'Arbeiten / Büro',color:'#9333ea',minSteckdosen:4,minLicht:1},
+  hwr:{name:'HWR / Technik',color:'#6b7280',minSteckdosen:2,minLicht:1,feucht:true},
+  keller:{name:'Keller / Abstellen',color:'#92766a',minSteckdosen:1,minLicht:1},
+  aussen:{name:'Außen / Terrasse',color:'#16a34a',minSteckdosen:1,minLicht:1,feucht:true},
+  sonstiges:{name:'Sonstiges',color:'#64748b',minSteckdosen:0,minLicht:0},
+};
+const ROOM_TYPE_KEYS=Object.keys(ROOM_TYPES);
+/* Leitungsschutzschalter: Nennstrom + max. Dauerlast (1~ 230 V).
+   Querschnitt-Empfehlung nach Verlegeart B2 (Richtwert DIN VDE 0298-4). */
+const BREAKERS={
+  B10:{a:10,p:'B',watt:2300,mm2:'1,5'}, B13:{a:13,p:'B',watt:2990,mm2:'1,5'},
+  B16:{a:16,p:'B',watt:3680,mm2:'1,5'}, B20:{a:20,p:'B',watt:4600,mm2:'2,5'},
+  B25:{a:25,p:'B',watt:5750,mm2:'4'}, C16:{a:16,p:'C',watt:3680,mm2:'1,5'},
+  B16_3:{a:16,p:'B',watt:11040,mm2:'2,5',phasen:3}, B25_3:{a:25,p:'B',watt:17250,mm2:'4',phasen:3}, B32_3:{a:32,p:'B',watt:22080,mm2:'6',phasen:3},
+};
+const BREAKER_KEYS=Object.keys(BREAKERS);
+const BREAKER_LABEL=k=>{const b=BREAKERS[k];return (b.phasen===3?'3~ ':'')+b.p+b.a+' ('+b.a+' A)';};
+/* Elementgruppen für die Prüfung */
+const GRP={
+  socket:t=>/^steckdose/.test(t),
+  socket230:t=>/^steckdose/.test(t)&&t!=='steckdose_stark',
+  light:t=>/^lichtquelle/.test(t),
+  sw:t=>t==='schalter'||t==='taster'||t==='taster4',
+  presence:t=>t==='bewegungsmelder'||t==='praesenzmelder',
+  smoke:t=>t==='rauchmelder',
+  big:t=>['herd','ofen','waschmaschine','trockner','steckdose_stark'].includes(t),
+};
+const NONLOAD=new Set(['unterverteiler','durchfuehrung']);
+/* Steckdosen-Einheiten (DIN 18015-2 zählt Einheiten, nicht Montagestellen). */
+const DEFAULT_GANG={steckdose:1,steckdose2:2,steckdose5:5,steckdose_schalt:1};
+const DEFAULT_TASTEN={taster:1,taster4:4};
+function gangOf(e){ if(!/^steckdose/.test(e.type)||e.type==='steckdose_stark')return null; return parseInt(e.gang,10)||DEFAULT_GANG[e.type]||1; }
+function tastenOf(e){ if(e.type!=='taster'&&e.type!=='taster4')return null; return parseInt(e.tasten,10)||DEFAULT_TASTEN[e.type]||1; }
+function socketUnits(e){ const g=gangOf(e); return g||0; }
+const IP_OPTIONS=['','IP20','IP44','IP54','IP65','IP66/67'];
+const SCHALTUNGEN=['','Ausschaltung','Wechselschaltung','Kreuzschaltung','Serienschaltung','Dimmer','Jalousie/Rollladen'];
+const STATUS_OPTIONS=['Geplant','Bestellt','Montiert','Geprüft'];
+const STATUS_COLOR={Geplant:'#9aa1a8',Bestellt:'#d97706',Montiert:'#2563eb','Geprüft':'#16a34a'};
+function _appliance(label,color,r,sw){const s=r*0.96;return [h('rect',{x:-s,y:-s,width:2*s,height:2*s,rx:r*0.16,fill:'#fff',stroke:color,strokeWidth:sw}),_t(label,0,r*0.02,(label.length>2?r*0.5:r*0.72),color,{mono:true})];}
+
+/* ============== Symbole ============== */
+function _t(s,x,y,size,color,o){o=o||{};return h('text',{x,y,fontSize:size,fontWeight:o.w||700,fill:o.fill||color,textAnchor:'middle',dominantBaseline:'central',fontFamily:o.mono?'var(--mono)':'var(--sans)'},s);}
+function _detector(color,r,sw){return [h('path',{d:`M ${-r} ${r*0.5} L ${-r} 0 A ${r} ${r} 0 0 1 ${r} 0 L ${r} ${r*0.5} Z`,fill:'#fff',stroke:color,strokeWidth:sw,strokeLinejoin:'round'}),h('line',{x1:-r*0.45,y1:r*0.05,x2:-r*0.45,y2:r*0.42,stroke:color,strokeWidth:sw*0.7}),h('line',{x1:0,y1:-r*0.05,x2:0,y2:r*0.42,stroke:color,strokeWidth:sw*0.7}),h('line',{x1:r*0.45,y1:r*0.05,x2:r*0.45,y2:r*0.42,stroke:color,strokeWidth:sw*0.7})];}
+function _sensorDeco(letter,color,r,sw){const arc=h('path',{d:`M ${r*0.25} ${-r*0.62} A ${r*0.78} ${r*0.78} 0 0 1 ${r*0.25} ${r*0.62}`,fill:'none',stroke:color,strokeWidth:sw*0.8});const dots=[-0.42,0,0.42].map(t=>h('circle',{cx:r*(0.62+0.2*Math.cos(t*1.3)),cy:r*t,r:sw*0.7,fill:color}));return [_t(letter,-r*0.28,0,r*1.25,color),arc].concat(dots);}
+function _socket(color,r,sw,o){o=o||{};const out=[h('path',{d:`M ${-r} ${r*0.15} A ${r} ${r} 0 0 1 ${r} ${r*0.15}`,fill:o.filled?color:'#fff',stroke:color,strokeWidth:sw}),h('line',{x1:-r,y1:r*0.15,x2:r,y2:r*0.15,stroke:color,strokeWidth:sw}),h('line',{x1:0,y1:r*0.15,x2:0,y2:r*0.95,stroke:color,strokeWidth:sw})];if(o.label)out.push(_t(o.label,0,-r*0.3,r*0.7,o.filled?'#fff':color));return out;}
+function _labelBox(text,color,r,sw,o){o=o||{};const w=Math.max(r*1.25,text.length*r*0.34+r*0.45),hh=r*0.85;const out=[h('rect',{x:-w,y:-hh,width:2*w,height:2*hh,rx:r*0.22,fill:'#fff',stroke:color,strokeWidth:sw}),_t(text,0,r*0.04,r*0.74,color,{mono:o.mono})];if(o.sup)out.push(_t(o.sup,w-r*0.28,-hh+r*0.26,r*0.55,color));if(o.stem){out.unshift(h('line',{x1:0,y1:-hh,x2:0,y2:-hh-r*0.55,stroke:color,strokeWidth:sw}));out.unshift(h('line',{x1:-r*0.3,y1:-hh-r*0.55,x2:r*0.3,y2:-hh-r*0.55,stroke:color,strokeWidth:sw}));}return out;}
+function symbolEls(type,color,r,opts){
+  r=r||16;const sw=Math.max(1.6,r*0.15),d=r*0.6;opts=opts||{};
+  if(type==='ceiling')type='lichtquelle'; if(type==='wall')type='lichtquelle_wand'; if(type==='socket')type='steckdose'; if(type==='switch')type='schalter'; if(type==='sensor')type='bewegungsmelder';
+  const circleX=ex=>{const o=[h('circle',{cx:0,cy:0,r,fill:'#fff',stroke:color,strokeWidth:sw}),h('line',{x1:-d,y1:-d,x2:d,y2:d,stroke:color,strokeWidth:sw}),h('line',{x1:-d,y1:d,x2:d,y2:-d,stroke:color,strokeWidth:sw})];return ex?o.concat(ex):o;};
+  switch(type){
+    case 'lichtquelle':return circleX();
+    case 'lichtquelle_dim':return circleX([_t('D',r*1.0,r*0.78,r*0.7,color)]);
+    case 'lichtquelle_wand':return circleX([h('line',{x1:-r*1.25,y1:-r,x2:-r*1.25,y2:r,stroke:color,strokeWidth:sw}),h('line',{x1:-r*1.25,y1:0,x2:-r,y2:0,stroke:color,strokeWidth:sw})]);
+    case 'schalter':return [h('line',{x1:0,y1:0,x2:r*1.1,y2:-r*1.1,stroke:color,strokeWidth:sw}),h('circle',{cx:0,cy:0,r:r*0.42,fill:'#fff',stroke:color,strokeWidth:sw}),h('circle',{cx:0,cy:0,r:r*0.15,fill:color})];
+    case 'taster':case 'taster4':{const num=String(opts.tasten||DEFAULT_TASTEN[type]||1);return [h('path',{d:`M ${-r*0.78} ${r*0.62} L ${-r*0.78} ${-r*0.1} L 0 ${-r*0.72} L ${r*0.78} ${-r*0.1} L ${r*0.78} ${r*0.62} Z`,fill:'#fff',stroke:color,strokeWidth:sw,strokeLinejoin:'round'}),h('line',{x1:0,y1:r*0.62,x2:0,y2:r*1.1,stroke:color,strokeWidth:sw}),_t(num,0,r*0.18,r*0.78,color)];}
+    case 'steckdose':case 'steckdose2':case 'steckdose5':{const g=opts.gang||DEFAULT_GANG[type]||1;return _socket(color,r,sw,g>1?{label:String(g)}:{});}
+    case 'steckdose_schalt':{const g=opts.gang||1;return _socket(color,r,sw,{filled:true,label:g>1?String(g):null});}
+    case 'steckdose_stark':return _socket(color,r,sw).concat([_t('400V',0,-r*0.42,r*0.5,color,{mono:true})]);
+    case 'bewegungsmelder':return _sensorDeco('B',color,r,sw);
+    case 'praesenzmelder':return _sensorDeco('P',color,r,sw);
+    case 'rauchmelder':return _detector(color,r,sw);
+    case 'hitzemelder':return _detector(color,r,sw).concat([_t('H',r*1.15,-r*0.1,r*0.7,color)]);
+    case 'temperatur':return [h('rect',{x:-r*0.2,y:-r*0.85,width:r*0.4,height:r*1.1,rx:r*0.2,fill:'#fff',stroke:color,strokeWidth:sw}),h('circle',{cx:0,cy:r*0.55,r:r*0.42,fill:color}),h('line',{x1:0,y1:-r*0.1,x2:0,y2:r*0.4,stroke:color,strokeWidth:sw*1.1})];
+    case 'fensterkontakt':return _labelBox('FK',color,r,sw,{mono:true});
+    case 'tuerkontakt':return _labelBox('TK',color,r,sw,{mono:true});
+    case 'heizkreisverteiler':return _labelBox('HKV',color,r,sw,{mono:true});
+    case 'erollladen':return [h('circle',{cx:0,cy:0,r,fill:color}),h('line',{x1:-r*0.62,y1:-r*0.38,x2:r*0.62,y2:-r*0.38,stroke:'#fff',strokeWidth:sw*1.1}),h('line',{x1:-r*0.72,y1:0,x2:r*0.72,y2:0,stroke:'#fff',strokeWidth:sw*1.1}),h('line',{x1:-r*0.62,y1:r*0.38,x2:r*0.62,y2:r*0.38,stroke:'#fff',strokeWidth:sw*1.1})];
+    case 'markise':return [h('path',{d:`M ${-r*0.78} ${-r*0.55} L ${r*0.78} ${-r*0.55} L ${r} ${r*0.5} L ${-r} ${r*0.5} Z`,fill:color,opacity:.9,stroke:color,strokeWidth:sw,strokeLinejoin:'round'}),h('line',{x1:-r*0.9,y1:-r*0.55,x2:r*0.9,y2:-r*0.55,stroke:color,strokeWidth:sw})].concat([-0.5,-0.17,0.17,0.5].map(f=>h('line',{x1:r*f,y1:-r*0.5,x2:r*f*1.28,y2:r*0.5,stroke:'#fff',strokeWidth:sw*0.8})));
+    case 'gong':return [h('path',{d:`M 0 ${-r*0.72} C ${r*0.55} ${-r*0.72} ${r*0.62} ${-r*0.05} ${r*0.62} ${r*0.32} L ${r*0.85} ${r*0.55} L ${-r*0.85} ${r*0.55} L ${-r*0.62} ${r*0.32} C ${-r*0.62} ${-r*0.05} ${-r*0.55} ${-r*0.72} 0 ${-r*0.72} Z`,fill:color}),h('circle',{cx:0,cy:-r*0.78,r:r*0.13,fill:color}),h('circle',{cx:0,cy:r*0.72,r:r*0.17,fill:color})];
+    case 'audio':return [h('path',{d:`M ${-r*0.85} ${-r*0.3} L ${-r*0.35} ${-r*0.3} L ${r*0.05} ${-r*0.65} L ${r*0.05} ${r*0.65} L ${-r*0.35} ${r*0.3} L ${-r*0.85} ${r*0.3} Z`,fill:color,strokeLinejoin:'round'}),h('path',{d:`M ${r*0.3} ${-r*0.32} A ${r*0.42} ${r*0.42} 0 0 1 ${r*0.3} ${r*0.32}`,fill:'none',stroke:color,strokeWidth:sw}),h('path',{d:`M ${r*0.55} ${-r*0.55} A ${r*0.72} ${r*0.72} 0 0 1 ${r*0.55} ${r*0.55}`,fill:'none',stroke:color,strokeWidth:sw})];
+    case 'audiobuchse':return _labelBox('5.1',color,r,sw,{mono:true,stem:true});
+    case 'hdmi':return _labelBox('HDMI',color,r*0.94,sw,{mono:true,stem:true});
+    case 'tv':return _labelBox('TV',color,r,sw,{mono:true,stem:true});
+    case 'lan':return _labelBox('LAN',color,r,sw,{mono:true,stem:true,sup:'1'});
+    case 'lan2':return _labelBox('LAN',color,r,sw,{mono:true,stem:true,sup:'2'});
+    case 'wlan':{const dot=h('circle',{cx:0,cy:r*0.6,r:sw*0.9,fill:color});const arcs=[0.45,0.78,1.08].map(rr=>h('path',{d:`M ${-r*rr} ${r*0.6} A ${r*rr} ${r*rr} 0 0 1 ${r*rr} ${r*0.6}`,fill:'none',stroke:color,strokeWidth:sw}));return [dot].concat(arcs);}
+    case 'wetterstation':return [h('rect',{x:-r*0.9,y:-r*0.9,width:r*1.8,height:r*1.8,rx:r*0.28,fill:'#fff',stroke:color,strokeWidth:sw}),h('circle',{cx:-r*0.18,cy:-r*0.2,r:r*0.3,fill:'none',stroke:color,strokeWidth:sw*0.9})].concat([0,1,2,3].map(i=>{const a=i*Math.PI/2+0.4;return h('line',{x1:-r*0.18+Math.cos(a)*r*0.42,y1:-r*0.2+Math.sin(a)*r*0.42,x2:-r*0.18+Math.cos(a)*r*0.58,y2:-r*0.2+Math.sin(a)*r*0.58,stroke:color,strokeWidth:sw*0.8});})).concat([h('line',{x1:r*0.1,y1:r*0.32,x2:-r*0.05,y2:r*0.6,stroke:color,strokeWidth:sw*0.8}),h('line',{x1:r*0.42,y1:r*0.32,x2:r*0.27,y2:r*0.6,stroke:color,strokeWidth:sw*0.8})]);
+    case 'junction':return [h('rect',{x:-r,y:-r,width:2*r,height:2*r,rx:2.5,fill:'#fff',stroke:color,strokeWidth:sw}),h('circle',{cx:0,cy:0,r:r*0.34,fill:color})];
+    case 'tablet':return [h('rect',{x:-r*0.98,y:-r*0.72,width:r*1.96,height:r*1.44,rx:r*0.16,fill:'#fff',stroke:color,strokeWidth:sw}),h('rect',{x:-r*0.74,y:-r*0.5,width:r*1.32,height:r*1.0,rx:r*0.05,fill:color,opacity:.14}),h('circle',{cx:r*0.78,cy:0,r:sw*0.55,fill:color})];
+    case 'tuerklingel':return [h('circle',{cx:0,cy:0,r,fill:'#fff',stroke:color,strokeWidth:sw}),h('circle',{cx:0,cy:0,r:r*0.34,fill:color}),h('line',{x1:0,y1:r,x2:0,y2:r*1.42,stroke:color,strokeWidth:sw})];
+    case 'kamera':return [h('path',{d:`M ${-r*0.92} ${-r*0.48} L ${r*0.34} ${-r*0.48} L ${r*0.34} ${r*0.48} L ${-r*0.92} ${r*0.48} Z`,fill:'#fff',stroke:color,strokeWidth:sw,strokeLinejoin:'round'}),h('path',{d:`M ${r*0.34} ${-r*0.22} L ${r*0.95} ${-r*0.52} L ${r*0.95} ${r*0.52} L ${r*0.34} ${r*0.22} Z`,fill:color}),h('circle',{cx:-r*0.3,cy:0,r:r*0.24,fill:'none',stroke:color,strokeWidth:sw*0.9})];
+    case 'herd':return _appliance('HERD',color,r,sw);
+    case 'ofen':return _appliance('OFEN',color,r,sw);
+    case 'waschmaschine':return _appliance('WM',color,r,sw);
+    case 'trockner':return _appliance('TR',color,r,sw);
+    case 'kuehlschrank':return _appliance('KS',color,r,sw);
+    case 'unterverteiler':{const s=r*0.95;return [h('rect',{x:-s,y:-s,width:2*s,height:2*s,rx:r*0.18,fill:'#fff',stroke:color,strokeWidth:sw}),h('rect',{x:-s*0.58,y:-s*0.58,width:1.16*s,height:1.16*s,rx:r*0.1,fill:'none',stroke:color,strokeWidth:sw*0.7}),_t('UV',0,0,r*0.66,color,{mono:true})];}
+    case 'durchfuehrung':{const a=r*0.5;return [h('circle',{cx:0,cy:0,r,fill:'#fff',stroke:color,strokeWidth:sw}),h('line',{x1:0,y1:-r*0.62,x2:0,y2:r*0.62,stroke:color,strokeWidth:sw}),h('path',{d:`M ${-a*0.5} ${-r*0.22} L 0 ${-r*0.7} L ${a*0.5} ${-r*0.22}`,fill:'none',stroke:color,strokeWidth:sw,strokeLinejoin:'round',strokeLinecap:'round'}),h('path',{d:`M ${-a*0.5} ${r*0.22} L 0 ${r*0.7} L ${a*0.5} ${r*0.22}`,fill:'none',stroke:color,strokeWidth:sw,strokeLinejoin:'round',strokeLinecap:'round'})];}
+    default:return circleX();
+  }
+}
+function makeIcon(kind,color){
+  color=color||'#4b5560';
+  if(kind==='select')return h('svg',{width:19,height:19,viewBox:'0 0 20 20'},h('path',{d:'M4 3 L4 16.5 L7.6 13 L10.2 18.5 L12.3 17.5 L9.7 12 L14.6 12 Z',fill:color}));
+  if(kind==='pan')return h('svg',{width:19,height:19,viewBox:'0 0 20 20'},h('path',{d:'M10 1.5 L12.4 4 H10.8 V9.2 H16 V7.6 L18.5 10 L16 12.4 V10.8 H10.8 V16 H12.4 L10 18.5 L7.6 16 H9.2 V10.8 H4 V12.4 L1.5 10 L4 7.6 V9.2 H9.2 V4 H7.6 Z',fill:color}));
+  if(kind==='cable')return h('svg',{width:19,height:19,viewBox:'0 0 20 20'},h('polyline',{points:'2,15 7,15 7,6 13,6 13,14 18,14',fill:'none',stroke:color,strokeWidth:1.9,strokeLinejoin:'round',strokeLinecap:'round'}),h('circle',{cx:2,cy:15,r:1.7,fill:color}),h('circle',{cx:18,cy:14,r:1.7,fill:color}));
+  if(kind==='calibrate')return h('svg',{width:19,height:19,viewBox:'0 0 20 20'},h('rect',{x:2,y:7,width:16,height:6,rx:1,fill:'none',stroke:color,strokeWidth:1.6}),h('line',{x1:6,y1:7,x2:6,y2:10,stroke:color,strokeWidth:1.3}),h('line',{x1:10,y1:7,x2:10,y2:11,stroke:color,strokeWidth:1.3}),h('line',{x1:14,y1:7,x2:14,y2:10,stroke:color,strokeWidth:1.3}));
+  if(kind==='room')return h('svg',{width:19,height:19,viewBox:'0 0 20 20'},h('path',{d:'M3 4 H17 V11 H11 V16 H3 Z',fill:'none',stroke:color,strokeWidth:1.6,strokeLinejoin:'round'}));
+  return h('svg',{width:22,height:22,viewBox:'0 0 24 24',style:{overflow:'visible'}},h('g',{transform:'translate(12,12)'},symbolEls(kind,color,8)));
+}
+function eyeIcon(open){
+  return open
+    ? h('svg',{width:16,height:16,viewBox:'0 0 20 20',fill:'none',stroke:'currentColor',strokeWidth:1.5},h('path',{d:'M1.5 10S4.5 4.5 10 4.5 18.5 10 18.5 10 15.5 15.5 10 15.5 1.5 10 1.5 10Z'}),h('circle',{cx:10,cy:10,r:2.4}))
+    : h('svg',{width:16,height:16,viewBox:'0 0 20 20',fill:'none',stroke:'currentColor',strokeWidth:1.5},h('path',{d:'M3 4l14 12M7.5 6.1A8.7 8.7 0 0 1 10 5.5c5.5 0 8.5 4.5 8.5 4.5a14 14 0 0 1-2.6 2.9M5 7.4A13.6 13.6 0 0 0 1.5 10S4.5 14.5 10 14.5c.9 0 1.7-.1 2.5-.4'}));
+}
+
+/* ============== App ============== */
+const KEY='elplan_v4', V3='elplan_v3', V2='elplan_eg_v2';
+const SNAP=30, R=16;
+const dom={
+  area:$('#canvasArea'), scene:$('#scene'), overlay:$('#overlay'), img:$('#planImg'),
+  drop:$('#dropzone'), dropHint:$('#dropHint'), left:$('#leftPanel'), rightBody:$('#rightBody'), circuitList:$('#circuitList'),
+  floorBar:$('#floorBar'), hint:$('#hint'), calibHost:$('#calibHost'), file:$('#fileInput'), toast:$('#toast'),
+  projektBar:$('#projektBar'), saveStatus:$('#saveStatus'), verteilerHost:$('#verteilerHost'), scrim:$('#scrim'),
+};
+function newFloor(name){ return {id:'f'+Date.now().toString(36)+Math.floor(Math.random()*999),name:name||'Etage',planURL:null,planFileId:null,planW:2000,planH:1414,planOpacity:1,scalePxPerM:null,elements:[],cables:[],rooms:[],view:null}; }
+
+/* ============== Backend-Anbindung (Stufe 4) ==============
+   Same-origin: das Backend liefert dieses Frontend selbst aus, daher /api/...
+   Kein Backend erreichbar -> Offline-Modus mit localStorage (unverändert). */
+const PKEY='elplan_projekt', TKEY='elplan_token';
+const Api={
+  token:null,
+  loadToken(){ try{ this.token=localStorage.getItem(TKEY)||null; }catch(e){ this.token=null; } return this.token; },
+  setToken(t){ this.token=t||null; try{ if(t)localStorage.setItem(TKEY,t); else localStorage.removeItem(TKEY); }catch(e){} },
+  async _json(method,path,body){
+    const opt={method,headers:{}};
+    if(this.token)opt.headers['Authorization']='Bearer '+this.token;
+    if(body!==undefined){ opt.headers['Content-Type']='application/json'; opt.body=JSON.stringify(body); }
+    const r=await fetch('/api'+path,opt);
+    if(r.status===401){ const e=new Error('unauthorized'); e.status=401; throw e; }
+    if(!r.ok){ let msg='HTTP '+r.status; try{ const j=await r.json(); if(j&&j.detail)msg=j.detail; }catch(_){} const e=new Error(msg); e.status=r.status; throw e; }
+    return r.status===204?null:r.json();
+  },
+  async health(){
+    for(let attempt=0;attempt<3;attempt++){
+      const c=new AbortController(); const t=setTimeout(()=>c.abort(),8000);
+      try{ const r=await fetch('/api/health',{signal:c.signal,cache:'no-store'}); clearTimeout(t);
+        if(r.ok){ const j=await r.json(); if(j&&j.status==='ok')return true; }
+      }catch(e){ clearTimeout(t); }
+      await new Promise(res=>setTimeout(res,700));
+    }
+    return false;
+  },
+  register(email,password,name){ return this._json('POST','/auth/register',{email,password,name}); },
+  login(email,password){ return this._json('POST','/auth/login',{email,password}); },
+  me(){ return this._json('GET','/auth/me'); },
+  listProjekte(){ return this._json('GET','/projekte'); },
+  getProjekt(id){ return this._json('GET','/projekte/'+id); },
+  createProjekt(name,daten){ return this._json('POST','/projekte',{name,daten:daten||{}}); },
+  updateProjekt(id,patch){ return this._json('PUT','/projekte/'+id,patch); },
+  deleteProjekt(id){ return this._json('DELETE','/projekte/'+id); },
+  fileUrl(id){ return '/api/dateien/'+id+'/inhalt'+(this.token?('?token='+encodeURIComponent(this.token)):''); },
+  async uploadDatei(projektId,file,etage){ const fd=new FormData(); fd.append('datei',file); fd.append('etage',etage||''); const headers={}; if(this.token)headers['Authorization']='Bearer '+this.token; const r=await fetch('/api/projekte/'+projektId+'/dateien',{method:'POST',body:fd,headers}); if(r.status===401){const e=new Error('unauthorized');e.status=401;throw e;} if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); },
+  deleteDatei(id){ return this._json('DELETE','/dateien/'+id); },
+};
+
+const App={
+  st:{
+    tool:'select', ortho:true, snap:false, gridCm:5,
+    floors:[Object.assign(newFloor('Erdgeschoss'),{id:'f1'})],
+    activeFloor:'f1',
+    circuits:[{id:'c1',name:'Stromkreis 1',color:PALETTE[0],hidden:false}],
+    activeCircuit:'c1', activeCableType:'nym15',
+    selected:null, selEls:[], marquee:null, draft:null, roomDraft:null, calib:null, showCalib:false, calibMeters:'',
+    scale:0.3, tx:0, ty:0, mouse:null,
+    rightTab:'props',
+    hideStatus:[],
+    online:false, projektId:null, projekte:[], user:null,
+  },
+  undoStack:[], redoStack:[],
+
+  init(){
+    this.loadLocal();
+    this.wire();
+    this.renderFloors(); this.renderLeft(); this.renderRight(); this.renderCircuits(); this.renderScene(); this.renderTopbar();
+    this.setPlanImg(); $('#opacity').value=this.fl().planOpacity;
+    if(!this.fl().view) requestAnimationFrame(()=>this.fit());
+    this.renderProjektBar();
+    this.updateUndoButtons();
+    this.boot();   // async: bei erreichbarem Backend auf Server-Daten umschalten
+  },
+
+  fl(){ return this.st.floors.find(f=>f.id===this.st.activeFloor)||this.st.floors[0]; },
+  syncView(){ const f=this.fl(); if(f) f.view={scale:this.st.scale,tx:this.st.tx,ty:this.st.ty}; },
+
+  /* ---- persistence ---- */
+  loadLocal(){
+    let raw=null; try{ raw=localStorage.getItem(KEY); }catch(e){}
+    if(raw){ try{ const s=JSON.parse(raw);
+      this.st.floors=(s.floors&&s.floors.length?s.floors:this.st.floors).map(f=>Object.assign(newFloor(),f));
+      this.st.activeFloor=s.activeFloor&&this.st.floors.some(f=>f.id===s.activeFloor)?s.activeFloor:this.st.floors[0].id;
+      this.st.circuits=(s.circuits||this.st.circuits).map(c=>Object.assign({hidden:false},c));
+      this.st.activeCircuit=s.activeCircuit||this.st.circuits[0].id;
+      this.st.activeCableType=s.activeCableType||'nym15';
+      const f=this.fl(); if(f.view){ this.st.scale=f.view.scale; this.st.tx=f.view.tx; this.st.ty=f.view.ty; }
+    }catch(e){} return; }
+    // Migration v3 (flach, eine Ebene)
+    try{ const o=localStorage.getItem(V3); if(o){ const s=JSON.parse(o);
+      this.st.floors=[Object.assign(newFloor('Erdgeschoss'),{id:'f1',planURL:s.planURL||null,planW:s.planW||2000,planH:s.planH||1414,planOpacity:s.planOpacity!=null?s.planOpacity:1,scalePxPerM:s.scalePxPerM!=null?s.scalePxPerM:null,elements:s.elements||[],cables:s.cables||[],view:s.view||null})];
+      this.st.circuits=(s.circuits||this.st.circuits).map(c=>Object.assign({hidden:false},c));
+      this.st.activeCircuit=s.activeCircuit||this.st.circuits[0].id; this.st.activeCableType=s.activeCableType||'nym15';
+      const f=this.fl(); if(f.view){ this.st.scale=f.view.scale; this.st.tx=f.view.tx; this.st.ty=f.view.ty; }
+      return;
+    } }catch(e){}
+    // Migration v2
+    try{ const o=localStorage.getItem(V2); if(o){ const s=JSON.parse(o);
+      this.st.floors=[Object.assign(newFloor('Erdgeschoss'),{id:'f1',planW:2625,planH:1858,elements:s.elements||[],cables:s.cables||[],scalePxPerM:s.scalePxPerM!=null?s.scalePxPerM:null})];
+      this.st.circuits=(s.circuits||this.st.circuits).map(c=>Object.assign({hidden:false},c));
+      this.st.activeCircuit=s.activeCircuit||this.st.circuits[0].id; this.st.activeCableType=s.activeCableType||'nym15';
+      this.toast('Bestehende Planung übernommen — bitte Grundriss neu importieren');
+    } }catch(e){}
+  },
+  /* ---- Backend / Projekte ---- */
+  setStatus(t){ if(dom.saveStatus)dom.saveStatus.textContent=t||''; },
+  async boot(){
+    this.setStatus('Verbinde…');
+    const ok=await Api.health();
+    this.st.online=ok;
+    if(!ok){ this.setStatus('Offline · lokal'); this.st.user=null; this.renderProjektBar(); return; }
+    // Angemeldet? Token prüfen.
+    Api.loadToken();
+    if(Api.token){ try{ this.st.user=await Api.me(); }catch(e){ Api.setToken(null); this.st.user=null; } }
+    if(!this.st.user){ this.setStatus(''); this.renderProjektBar(); this.showAuth(); return; }
+    this.hideAuth();
+    await this.loadProjekteListe();
+  },
+  async loadProjekteListe(){
+    try{
+      let list=await Api.listProjekte();
+      if(!list.length){ const p=await Api.createProjekt('Neues Projekt',this.collectDaten()); this.st.projektId=p.id; list=await Api.listProjekte(); }
+      else { let last=0; try{ last=parseInt(localStorage.getItem(PKEY)||'0',10); }catch(e){} this.st.projektId=list.some(p=>p.id===last)?last:list[0].id; }
+      this.st.projekte=list;
+      await this.loadProjekt(this.st.projektId);
+    }catch(e){ if(e&&e.status===401){ this.onAuthLost(); return; } this.st.online=false; this.setStatus('Offline · lokal'); }
+    this.renderProjektBar();
+  },
+  collectDaten(){ this.syncView(); const s=this.st; const floors=s.floors.map(f=>{ const o=Object.assign({},f); if(o.planFileId)delete o.planURL; return o; }); return {floors,activeFloor:s.activeFloor,circuits:s.circuits,activeCircuit:s.activeCircuit,activeCableType:s.activeCableType}; },
+  applyDaten(d){
+    d=d||{};
+    this.st.floors=(d.floors&&d.floors.length?d.floors:[Object.assign(newFloor('Erdgeschoss'),{id:'f1'})]).map(f=>{ const fl=Object.assign(newFloor(),f); if(fl.planFileId&&!fl.planURL)fl.planURL=Api.fileUrl(fl.planFileId); return fl; });
+    this.st.activeFloor=d.activeFloor&&this.st.floors.some(f=>f.id===d.activeFloor)?d.activeFloor:this.st.floors[0].id;
+    this.st.circuits=(d.circuits&&d.circuits.length?d.circuits:[{id:'c1',name:'Stromkreis 1',color:PALETTE[0],hidden:false}]).map(c=>Object.assign({hidden:false},c));
+    this.st.activeCircuit=d.activeCircuit&&this.st.circuits.some(c=>c.id===d.activeCircuit)?d.activeCircuit:this.st.circuits[0].id;
+    this.st.activeCableType=d.activeCableType||'nym15';
+    const f=this.fl(); if(f.view){ this.st.scale=f.view.scale; this.st.tx=f.view.tx; this.st.ty=f.view.ty; }
+  },
+  async loadProjekt(id){
+    try{ const p=await Api.getProjekt(id);
+      this.st.projektId=id; try{ localStorage.setItem(PKEY,String(id)); }catch(e){}
+      this.st.selected=null; this.st.selEls=[]; this.st.draft=null; this.st.mouse=null; this.st.calib=null; this.st.showCalib=false;
+      this.applyDaten(p.daten);
+      this.setPlanImg(); this.renderCalib(); this.renderFloors(); this.allRender();
+      $('#opacity').value=this.fl().planOpacity;
+      if(!this.fl().view)this.fit();
+      this.renderProjektBar(); this.setStatus('Gespeichert');
+    }catch(e){ if(e&&e.status===401){ this.onAuthLost(); return; } this.toast('Projekt konnte nicht geladen werden'); }
+  },
+  pushBackend(){
+    if(!(this.st.online&&this.st.user&&this.st.projektId))return;
+    clearTimeout(this._bt); this.setStatus('Speichert…');
+    this._bt=setTimeout(async()=>{
+      try{ await Api.updateProjekt(this.st.projektId,{daten:this.collectDaten()}); this.setStatus('Gespeichert'); }
+      catch(e){ if(e&&e.status===401){ this.onAuthLost(); return; } this.setStatus('Sync-Fehler'); }
+    },800);
+  },
+  async newProjekt(){
+    if(!this.st.online)return;
+    const name=this.uniqueName('Projekt '+(this.st.projekte.length+1),this.st.projekte.map(p=>p.name));
+    try{ const blank={floors:[Object.assign(newFloor('Erdgeschoss'),{id:'f1'})],activeFloor:'f1',circuits:[{id:'c1',name:'Stromkreis 1',color:PALETTE[0],hidden:false}],activeCircuit:'c1',activeCableType:'nym15'};
+      const p=await Api.createProjekt(name,blank); this.st.projekte=await Api.listProjekte(); await this.loadProjekt(p.id); this.toast('Projekt angelegt: '+name);
+    }catch(e){ this.toast('Projekt konnte nicht angelegt werden'); }
+  },
+  async renameProjekt(){
+    if(!this.st.online||!this.st.projektId)return;
+    const cur=this.st.projekte.find(p=>p.id===this.st.projektId);
+    const v=prompt('Projektname',cur?cur.name:''); if(v==null)return;
+    const others=this.st.projekte.filter(p=>p.id!==this.st.projektId).map(p=>p.name);
+    const name=this.uniqueName(v.trim()||'Projekt',others);
+    try{ await Api.updateProjekt(this.st.projektId,{name}); this.st.projekte=await Api.listProjekte(); this.renderProjektBar(); }
+    catch(e){ this.toast('Umbenennen fehlgeschlagen'); }
+  },
+  async delProjekt(){
+    if(!this.st.online||!this.st.projektId)return;
+    if(this.st.projekte.length<=1){ this.toast('Das letzte Projekt kann nicht gelöscht werden'); return; }
+    const cur=this.st.projekte.find(p=>p.id===this.st.projektId);
+    if(!confirm('Projekt „'+(cur?cur.name:'')+'" endgültig löschen?'))return;
+    try{ await Api.deleteProjekt(this.st.projektId); const list=await Api.listProjekte(); this.st.projekte=list; await this.loadProjekt(list[0].id); this.toast('Projekt gelöscht'); }
+    catch(e){ this.toast('Löschen fehlgeschlagen'); }
+  },
+  renderProjektBar(){
+    const bar=dom.projektBar; if(!bar)return; clear(bar);
+    if(!this.st.online){
+      bar.appendChild(h('span',{style:{display:'inline-flex',alignItems:'center',gap:'7px',fontSize:'12.5px',color:'#9aa1a8'}},
+        h('span',{style:{width:'8px',height:'8px',borderRadius:'50%',background:'#cbd1d6'}}),'Offline · lokal'));
+      bar.appendChild(h('button',{className:'tbtn',title:'Erneut mit Server verbinden',style:{height:'28px',padding:'0 9px',fontSize:'12px'},onClick:()=>this.boot()},'↻'));
+      return;
+    }
+    bar.appendChild(h('span',{title:'Mit Server verbunden',style:{width:'8px',height:'8px',borderRadius:'50%',background:'#16a34a',flex:'none'}}));
+    const sel=h('select',{className:'sel',title:'Projekt wählen',style:{height:'30px',padding:'0 8px',maxWidth:'220px',fontWeight:'600',color:'#1c2024'}});
+    this.st.projekte.forEach(p=>sel.appendChild(h('option',{value:p.id},p.name)));
+    sel.value=String(this.st.projektId);
+    sel.addEventListener('change',e=>this.loadProjekt(parseInt(e.target.value,10)));
+    bar.appendChild(sel);
+    bar.appendChild(h('button',{className:'tbtn',title:'Neues Projekt',style:{height:'30px',width:'30px',padding:'0',justifyContent:'center'},onClick:()=>this.newProjekt()},'+'));
+    bar.appendChild(h('button',{className:'tbtn',title:'Projekt umbenennen',style:{height:'30px',width:'30px',padding:'0',justifyContent:'center'},onClick:()=>this.renameProjekt()},'✎'));
+    bar.appendChild(h('button',{className:'tbtn',title:'Projekt löschen',style:{height:'30px',width:'30px',padding:'0',justifyContent:'center',color:'#c0322a'},onClick:()=>this.delProjekt()},'×'));
+    if(this.st.user){
+      bar.appendChild(h('span',{style:{width:'1px',height:'22px',background:'#e4e7ea',margin:'0 2px'}}));
+      bar.appendChild(h('span',{title:this.st.user.email,style:{fontSize:'12px',color:'#6b7280',maxWidth:'150px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},(this.st.user.name||this.st.user.email)+(this.st.user.is_admin?' · Admin':'')));
+      bar.appendChild(h('button',{className:'tbtn',title:'Abmelden',style:{height:'30px',padding:'0 9px',fontSize:'12px'},onClick:()=>this.logout()},'Abmelden'));
+    }
+  },
+
+  /* ---- Auth ---- */
+  onAuthLost(){ Api.setToken(null); this.st.user=null; this.setStatus(''); this.renderProjektBar(); this.toast('Sitzung abgelaufen – bitte erneut anmelden'); this.showAuth(); },
+  logout(){ Api.setToken(null); this.st.user=null; this.st.projekte=[]; this.st.projektId=null; this.setStatus(''); this.renderProjektBar(); this.showAuth(); },
+  hideAuth(){ if(this._authEl){ this._authEl.remove(); this._authEl=null; } },
+  async doAuth(mode,email,password,name,errEl,btn){
+    email=(email||'').trim(); if(!email||!password){ errEl.textContent='Bitte E-Mail und Passwort eingeben.'; return; }
+    if(mode==='register'&&password.length<6){ errEl.textContent='Passwort muss mindestens 6 Zeichen haben.'; return; }
+    errEl.textContent=''; if(btn){btn.disabled=true;btn.style.opacity='.6';}
+    try{
+      const res=mode==='register'?await Api.register(email,password,name):await Api.login(email,password);
+      Api.setToken(res.access_token); this.st.user=res.user;
+      this.hideAuth(); this.renderProjektBar();
+      await this.loadProjekteListe();
+    }catch(e){ errEl.textContent=(e&&e.message&&e.message!=='unauthorized')?e.message:'Anmeldung fehlgeschlagen.'; if(btn){btn.disabled=false;btn.style.opacity='1';} }
+  },
+  showAuth(){
+    this.hideAuth();
+    let mode='login';
+    const title=h('div',{style:{fontWeight:700,fontSize:'19px',marginBottom:'3px'}},'Anmelden');
+    const sub=h('div',{style:{fontSize:'13px',color:'#6b7280',marginBottom:'18px'}},'Melde dich an, um auf deine Projekte zuzugreifen.');
+    const nameField=h('div',{style:{marginBottom:'12px',display:'none'}},h('label',{className:'field-label'},'Name (optional)'),(()=>{const i=h('input',{className:'inp',autocomplete:'name'});return i;})());
+    const email=h('input',{className:'inp',type:'email',autocomplete:'username',placeholder:'name@firma.de'});
+    const pass=h('input',{className:'inp',type:'password',autocomplete:'current-password',placeholder:'••••••••'});
+    const err=h('div',{style:{fontSize:'12.5px',color:'#c0322a',minHeight:'17px',margin:'2px 0 4px'}});
+    const submit=h('button',{className:'tbtn primary',style:{width:'100%',height:'42px',justifyContent:'center',fontSize:'14px',marginTop:'4px'}},'Anmelden');
+    const toggle=h('button',{style:{border:'0',background:'transparent',color:'#2563eb',fontSize:'13px',cursor:'pointer',marginTop:'14px',width:'100%',fontWeight:'500'}},'Noch kein Konto? Registrieren');
+    const doIt=()=>this.doAuth(mode,email.value,pass.value,nameField.querySelector('input').value,err,submit);
+    submit.addEventListener('click',doIt);
+    [email,pass,nameField.querySelector('input')].forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter')doIt();}));
+    toggle.addEventListener('click',()=>{ mode=mode==='login'?'register':'login'; const reg=mode==='register';
+      title.textContent=reg?'Registrieren':'Anmelden'; sub.textContent=reg?'Lege ein neues Konto an. Das erste Konto wird Administrator.':'Melde dich an, um auf deine Projekte zuzugreifen.';
+      nameField.style.display=reg?'block':'none'; submit.textContent=reg?'Konto erstellen':'Anmelden'; toggle.textContent=reg?'Schon ein Konto? Anmelden':'Noch kein Konto? Registrieren'; pass.setAttribute('autocomplete',reg?'new-password':'current-password'); err.textContent=''; });
+    const card=h('div',{className:'modal',style:{width:'360px'}},title,sub,
+      nameField,
+      h('div',{style:{marginBottom:'12px'}},h('label',{className:'field-label'},'E-Mail'),email),
+      h('div',{style:{marginBottom:'4px'}},h('label',{className:'field-label'},'Passwort'),pass),
+      err, submit, toggle);
+    this._authEl=h('div',{className:'modal-bg',style:{zIndex:60}},card);
+    document.body.appendChild(this._authEl);
+    setTimeout(()=>email.focus(),40);
+  },
+
+  persist(){
+    clearTimeout(this._pt);
+    this._pt=setTimeout(()=>{
+      this.syncView();
+      const s=this.st;
+      const payload={floors:s.floors,activeFloor:s.activeFloor,circuits:s.circuits,activeCircuit:s.activeCircuit,activeCableType:s.activeCableType};
+      try{ localStorage.setItem(KEY,JSON.stringify(payload)); }
+      catch(e){ try{ const p2=JSON.parse(JSON.stringify(payload)); p2.floors.forEach(f=>delete f.planURL); localStorage.setItem(KEY,JSON.stringify(p2)); this.toast('Pläne zu groß für dauerhafte Speicherung – bleiben nur für diese Sitzung'); }catch(_){} }
+    },300);
+    this.pushBackend();   // Server-Speicherung (eigene Entprellung), nur online
+  },
+  _snapshot(){ this.syncView(); return JSON.stringify({floors:this.st.floors,circuits:this.st.circuits,activeCircuit:this.st.activeCircuit,activeFloor:this.st.activeFloor}); },
+  _applySnapshot(str){ const s=JSON.parse(str); this.st.floors=s.floors; this.st.circuits=s.circuits; this.st.activeCircuit=s.activeCircuit; if(s.activeFloor&&this.st.floors.some(f=>f.id===s.activeFloor))this.st.activeFloor=s.activeFloor; this.st.selected=null; this.st.draft=null; this.st.roomDraft=null; const f=this.fl(); if(f.view){this.st.scale=f.view.scale;this.st.tx=f.view.tx;this.st.ty=f.view.ty;} this.setPlanImg(); this.renderFloors(); this.allRender(); if(this.st.verteilerOpen)this.renderVerteiler(); this.persist(); },
+  pushUndo(){ try{ this.undoStack.push(this._snapshot()); if(this.undoStack.length>80)this.undoStack.shift(); this.redoStack.length=0; this.updateUndoButtons(); }catch(e){} },
+  undo(){ if(!this.undoStack.length)return; this.redoStack.push(this._snapshot()); this._applySnapshot(this.undoStack.pop()); this.updateUndoButtons(); },
+  redo(){ if(!this.redoStack.length)return; this.undoStack.push(this._snapshot()); this._applySnapshot(this.redoStack.pop()); this.updateUndoButtons(); },
+  updateUndoButtons(){ const u=$('#btnUndo'),r=$('#btnRedo'); if(u){u.disabled=!this.undoStack.length;u.style.opacity=this.undoStack.length?'1':'.45';} if(r){r.disabled=!this.redoStack.length;r.style.opacity=this.redoStack.length?'1':'.45';} },
+
+  allRender(){ this.renderScene(); this.renderRight(); this.renderCircuits(); this.renderTopbar(); this.renderLeft(); },
+
+  /* ---- helpers ---- */
+  circ(id){ return this.st.circuits.find(c=>c.id===id); },
+  circColor(id){ const c=this.circ(id); return c?c.color:'#888'; },
+  isHidden(id){ const c=this.circ(id); return !!(c&&c.hidden); },
+  fmtLen(px){ const sp=this.fl().scalePxPerM; if(!sp)return null; return (px/sp).toFixed(2)+' m'; },
+  cableLenPx(pts){ let s=0; for(let i=1;i<pts.length;i++)s+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y); return s; },
+  toast(msg){ dom.toast.textContent=msg; dom.toast.classList.add('show'); clearTimeout(this._tt); this._tt=setTimeout(()=>dom.toast.classList.remove('show'),3200); },
+  planPoint(e){ const r=dom.area.getBoundingClientRect(); return {x:(e.clientX-r.left-this.st.tx)/this.st.scale, y:(e.clientY-r.top-this.st.ty)/this.st.scale}; },
+  nearestEl(p,excludeId){ let best=null,bd=SNAP; for(const el of this.fl().elements){ if(el.id===excludeId)continue; if(this.isHidden(el.circuit))continue; const dd=Math.hypot(el.x-p.x,el.y-p.y); if(dd<bd){bd=dd;best=el;} } return best; },
+  uniqueName(base,names){ const set=names.map(n=>(n||'').toLowerCase()); base=(base||'').trim()||'Neu'; if(!set.includes(base.toLowerCase()))return base; let i=2; while(set.includes((base+' ('+i+')').toLowerCase()))i++; return base+' ('+i+')'; },
+
+  /* ---- zoom / pan ---- */
+  clampScale(s){ return Math.min(Math.max(s,0.05),8); },
+  applyTransform(){ const s=this.st; dom.scene.style.transform=`translate(${s.tx}px,${s.ty}px) scale(${s.scale})`; },
+  zoomAt(lx,ly,f){ const s=this.st,ns=this.clampScale(s.scale*f),k=ns/s.scale; s.scale=ns; s.tx=lx-(lx-s.tx)*k; s.ty=ly-(ly-s.ty)*k; this.applyTransform(); this.renderTopbar(); this.persist(); },
+  zoomBy(f){ const r=dom.area.getBoundingClientRect(); this.zoomAt(r.width/2,r.height/2,f); },
+  fit(){ const f=this.fl(); const r=dom.area.getBoundingClientRect(); const s=Math.min(r.width/f.planW,r.height/f.planH)*0.96; this.st.scale=s; this.st.tx=(r.width-f.planW*s)/2; this.st.ty=(r.height-f.planH*s)/2; this.applyTransform(); this.renderTopbar(); this.persist(); },
+
+  /* ---- floors ---- */
+  setPlanImg(){ const f=this.fl(); if(f.planURL){ dom.img.src=f.planURL; dom.img.style.display=''; dom.drop.style.display='none'; } else { dom.img.removeAttribute('src'); dom.img.style.display='none'; dom.drop.style.display='flex'; } },
+  switchFloor(id){ if(id===this.st.activeFloor)return; this.syncView(); this.st.activeFloor=id; this.st.selected=null; this.st.selEls=[]; this.st.draft=null; this.st.mouse=null; this.st.calib=null; this.st.showCalib=false; const f=this.fl(); if(f.view){this.st.scale=f.view.scale;this.st.tx=f.view.tx;this.st.ty=f.view.ty;} this.setPlanImg(); $('#opacity').value=f.planOpacity; this.renderCalib(); this.renderFloors(); this.renderScene(); this.renderRight(); this.renderCircuits(); this.renderTopbar(); this.renderLeft(); if(!f.view)this.fit(); this.persist(); },
+  addFloor(){ this.pushUndo(); const name=this.uniqueName('Etage '+(this.st.floors.length+1),this.st.floors.map(f=>f.name)); const f=newFloor(name); this.st.floors.push(f); this.switchFloor(f.id); },
+  renameFloor(id,v){ const f=this.st.floors.find(f=>f.id===id); if(f)f.name=v; this.persist(); },
+  validateFloorName(id){ const f=this.st.floors.find(f=>f.id===id); if(!f)return; const others=this.st.floors.filter(x=>x.id!==id).map(x=>x.name); const nm=this.uniqueName((f.name||'').trim()||'Etage',others); if(nm!==f.name){ if((f.name||'').trim()&&others.some(o=>o.toLowerCase()===(f.name||'').trim().toLowerCase()))this.toast('Etagenname bereits vergeben'); f.name=nm; this.renderFloors(); } this.persist(); },
+  delFloor(id){ if(this.st.floors.length<=1)return; const f=this.st.floors.find(f=>f.id===id); const n=(f.elements.length+f.cables.length); if(n>0&&!confirm('Etage „'+f.name+'" mit '+n+' Objekten wirklich löschen?'))return; if(this.st.online&&f.planFileId)Api.deleteDatei(f.planFileId).catch(()=>{}); this.pushUndo(); this.st.floors=this.st.floors.filter(f=>f.id!==id); if(this.st.activeFloor===id){ this.st.activeFloor=this.st.floors[0].id; const nf=this.fl(); if(nf.view){this.st.scale=nf.view.scale;this.st.tx=nf.view.tx;this.st.ty=nf.view.ty;} this.setPlanImg(); $('#opacity').value=nf.planOpacity; if(!nf.view)this.fit(); } this.st.selected=null; this.renderFloors(); this.allRender(); this.persist(); },
+
+  /* ---- tools ---- */
+  setTool(t){ this.st.tool=t; if(t!=='cable'&&this.st.draft){this.st.draft=null;this.st.mouse=null;} if(t!=='room'&&this.st.roomDraft){this.st.roomDraft=null;this.st.mouse=null;} this.renderLeft(); this.renderScene(); this.renderHint(); this.updateCursor(); if(this.isMobile())this.closeDrawers(); },
+  toolClick(p){ const t=this.st.tool; if(t==='calibrate')return this.addCalibPoint(p); if(t==='cable')return this.addCablePoint(p); if(t==='room')return this.addRoomPoint(p); if(TYPES[t])return this.placeElement(t,p); },
+  placeElement(type,p){ this.pushUndo(); const f=this.fl(); const s=this.snapElement(p,type); const n=f.elements.filter(e=>e.type===type).length+1; const el={id:'e'+Date.now().toString(36)+Math.floor(Math.random()*999),type,x:s.x,y:s.y,rot:s.rot||0,circuit:this.st.activeCircuit,label:TYPES[type].prefix+n,model:'',watt:'',dim:'',note:'',riserLen:''}; f.elements.push(el); this.st.selEls=[el.id]; this.st.selected={kind:'element',id:el.id}; this.st.rightTab='props'; this.allRender(); this.persist(); },
+  addCablePoint(p){
+    const d=this.st.draft; let np={x:Math.round(p.x),y:Math.round(p.y)};
+    const near=this.nearestEl(p,d&&d.fromEl);
+    if(near){ np={x:near.x,y:near.y}; }
+    else if(this.st.ortho&&d&&d.points.length){ const l=d.points[d.points.length-1]; if(Math.abs(np.x-l.x)>Math.abs(np.y-l.y))np.y=l.y; else np.x=l.x; }
+    if(!d){ this.pushUndo(); this.st.draft={points:[np],fromEl:near?near.id:null}; this.renderScene(); this.renderHint(); return; }
+    if(near&&near.id!==d.fromEl){ this.st.draft.points.push(np); this.finishCable(near.id); return; }
+    this.st.draft.points.push(np); this.renderScene();
+  },
+  finishCable(toEl){
+    const d=this.st.draft; if(!d)return;
+    if(d.points.length>=2){ const cab={id:'k'+Date.now().toString(36),circuit:this.st.activeCircuit,cableType:this.st.activeCableType,points:d.points,dashed:false,fromEl:d.fromEl||null,toEl:toEl||null}; this.fl().cables.push(cab); this.st.draft=null; this.st.mouse=null; this.st.selected={kind:'cable',id:cab.id}; this.allRender(); this.persist(); }
+    else { this.st.draft=null; this.st.mouse=null; this.renderScene(); this.renderHint(); }
+  },
+  addCalibPoint(p){ const c=this.st.calib; if(!c)this.st.calib={p1:p}; else if(!c.p2){ this.st.calib={p1:c.p1,p2:p}; this.st.showCalib=true; this.renderCalib(); } this.renderScene(); },
+
+  /* ---- rooms ---- */
+  addRoomPoint(p){
+    const d=this.st.roomDraft; let np={x:Math.round(p.x),y:Math.round(p.y)};
+    if(d&&d.points.length){ const f=d.points[0]; if(d.points.length>=3&&Math.hypot(np.x-f.x,np.y-f.y)<SNAP){ this.finishRoom(); return; }
+      if(this.st.ortho){ const l=d.points[d.points.length-1]; if(Math.abs(np.x-l.x)>Math.abs(np.y-l.y))np.y=l.y; else np.x=l.x; } }
+    if(!d){ this.pushUndo(); this.st.roomDraft={points:[np]}; this.renderScene(); this.renderHint(); return; }
+    d.points.push(np); this.renderScene();
+  },
+  finishRoom(){
+    const d=this.st.roomDraft; if(!d){return;}
+    if(d.points.length>=3){ const f=this.fl(); const n=f.rooms.length+1; const room={id:'r'+Date.now().toString(36)+Math.floor(Math.random()*999),name:'Raum '+n,type:'wohnen',points:d.points}; f.rooms.push(room); this.st.roomDraft=null; this.st.mouse=null; this.st.selected={kind:'room',id:room.id}; this.st.rightTab='props'; this.allRender(); this.persist(); }
+    else { this.st.roomDraft=null; this.st.mouse=null; this.renderScene(); this.renderHint(); }
+  },
+  polyArea(pts){ let a=0; for(let i=0,n=pts.length;i<n;i++){ const p=pts[i],q=pts[(i+1)%n]; a+=p.x*q.y-q.x*p.y; } return Math.abs(a)/2; },
+  polyCentroid(pts){ let a=0,cx=0,cy=0; for(let i=0,n=pts.length;i<n;i++){ const p=pts[i],q=pts[(i+1)%n]; const cr=p.x*q.y-q.x*p.y; a+=cr; cx+=(p.x+q.x)*cr; cy+=(p.y+q.y)*cr; } if(Math.abs(a)<1e-6){ const m=pts.reduce((s,p)=>({x:s.x+p.x,y:s.y+p.y}),{x:0,y:0}); return {x:m.x/pts.length,y:m.y/pts.length}; } a*=0.5; return {x:cx/(6*a),y:cy/(6*a)}; },
+  pointInPoly(x,y,pts){ let inside=false; for(let i=0,j=pts.length-1;i<pts.length;j=i++){ const xi=pts[i].x,yi=pts[i].y,xj=pts[j].x,yj=pts[j].y; if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside; } return inside; },
+  roomOf(el){ const f=this.fl(); for(let i=f.rooms.length-1;i>=0;i--){ const r=f.rooms[i]; if(r.points.length>=3&&this.pointInPoly(el.x,el.y,r.points))return r; } return null; },
+  roomAreaM2(r){ const sp=this.fl().scalePxPerM; if(!sp)return null; return this.polyArea(r.points)/(sp*sp); },
+  selRoom(){ const s=this.st.selected; return s&&s.kind==='room'?this.fl().rooms.find(r=>r.id===s.id):null; },
+  onRoomDown(id,e){ e.stopPropagation(); if(this.st.tool!=='select'){this.toolClick(this.planPoint(e));return;} this.st.selEls=[]; this.st.selected={kind:'room',id}; this.st.rightTab='props'; this.renderScene(); this.renderRight(); if(this.isMobile())this.openDrawer('right'); },
+  onRoomVertDown(id,i,e){ e.stopPropagation(); if(this.st.tool!=='select')return; this.pushUndo(); this._rvdrag={id,i}; try{dom.area.setPointerCapture(e.pointerId);}catch(_){} },
+  editRoom(field,v){ const r=this.selRoom(); if(!r)return; r[field]=v; this.renderScene(); this.persist(); },
+
+  /* ---- pointer ---- */
+  onDown(e){
+    if(e.button===2)return;
+    if(e.target.closest('.zoombar,.floorbar'))return;
+    const t=this.st.tool, mid=e.button===1;
+    if(this._space||t==='pan'||mid){ this._pan={sx:e.clientX,sy:e.clientY,tx:this.st.tx,ty:this.st.ty}; try{dom.area.setPointerCapture(e.pointerId);}catch(_){} return; }
+    const p=this.planPoint(e);
+    if(t==='select'){ const add=e.shiftKey; if(!add)this.clearSel(); this._marq={x0:p.x,y0:p.y,add,base:this.st.selEls.slice()}; this.st.marquee={x0:p.x,y0:p.y,x1:p.x,y1:p.y}; try{dom.area.setPointerCapture(e.pointerId);}catch(_){} this.allRender(); return; }
+    try{dom.area.setPointerCapture(e.pointerId);}catch(_){}
+    this.toolClick(p);
+  },
+  onElDown(id,e){
+    if(e.button===2){ e.stopPropagation(); return; }
+    e.stopPropagation();
+    if(this.st.tool!=='select'){ this.toolClick(this.planPoint(e)); return; }
+    const p=this.planPoint(e);
+    if(e.shiftKey){ this.selectEl(id,true); this.st.rightTab='props'; this.renderScene(); this.renderRight(); this.renderLeft(); return; }
+    if(!this.isElSel(id))this.selectEl(id,false);
+    this.pushUndo();
+    const f=this.fl(), ids=this.st.selEls.slice(), orig={};
+    ids.forEach(i2=>{ const el=f.elements.find(x=>x.id===i2); if(el)orig[i2]={x:el.x,y:el.y}; });
+    const prim=f.elements.find(x=>x.id===id);
+    this._edrag={ids,orig,primId:id,pdx:prim.x-p.x,pdy:prim.y-p.y,moved:false};
+    this.st.rightTab='props';
+    try{dom.area.setPointerCapture(e.pointerId);}catch(_){}
+    this.renderScene(); this.renderRight(); this.renderLeft();
+  },
+  onElCtx(id,e){ if(this.st.tool!=='select')return; e.preventDefault(); e.stopPropagation(); if(!this.isElSel(id))this.selectEl(id,false); this.st.rightTab='props'; this.allRender(); const n=this.st.selEls.length; this.showCtx(e.clientX,e.clientY,[ {label:n>1?('Duplizieren ('+n+')'):'Duplizieren',fn:()=>this.duplicateSel()}, {label:'Kopieren',fn:()=>this.copySel()}, {label:'45° drehen',fn:()=>this.rotAll(45)}, {sep:true}, {label:n>1?('Löschen ('+n+')'):'Löschen',danger:true,fn:()=>this.deleteSelected()} ]); },
+  onCableDown(id,e){ e.stopPropagation(); if(this.st.tool!=='select'){this.toolClick(this.planPoint(e));return;} this.st.selEls=[]; this.st.selected={kind:'cable',id}; this.st.rightTab='props'; this.renderScene(); this.renderRight(); if(this.isMobile())this.openDrawer('right'); },
+  onVertDown(id,i,e){ e.stopPropagation(); if(this.st.tool!=='select')return; this.pushUndo(); this._vdrag={id,i}; try{dom.area.setPointerCapture(e.pointerId);}catch(_){} },
+  moveConnected(elId,x,y){ for(const c of this.fl().cables){ if(c.fromEl===elId)c.points[0]={x,y}; if(c.toEl===elId)c.points[c.points.length-1]={x,y}; } },
+  onMove(e){
+    if(this._marq){ const p=this.planPoint(e); this._marq.x1=p.x; this._marq.y1=p.y; this.st.marquee={x0:this._marq.x0,y0:this._marq.y0,x1:p.x,y1:p.y}; this._applyMarquee(); this.scheduleScene(); return; }
+    if(this._pan){ this.st.tx=this._pan.tx+(e.clientX-this._pan.sx); this.st.ty=this._pan.ty+(e.clientY-this._pan.sy); this.applyTransform(); return; }
+    if(this._edrag){ const p=this.planPoint(e); const d=this._edrag; d.moved=true; const f=this.fl(); let nx=p.x+d.pdx, ny=p.y+d.pdy; if(this.st.snap){ if(d.ids.length===1){ const el0=f.elements.find(x=>x.id===d.ids[0]); const s=this.snapElement({x:nx,y:ny},el0.type); nx=s.x; ny=s.y; if(s.rot!=null){el0.rot=s.rot;} else { const a=this.alignSnap(nx,ny,d.ids); nx=a.x; ny=a.y; } } else { const sp=this.snapPt({x:nx,y:ny}); nx=sp.x; ny=sp.y; } } else { nx=Math.round(nx); ny=Math.round(ny); } const ddx=nx-d.orig[d.primId].x, ddy=ny-d.orig[d.primId].y; d.ids.forEach(id=>{ const el=f.elements.find(x=>x.id===id); if(!el)return; el.x=Math.round(d.orig[id].x+ddx); el.y=Math.round(d.orig[id].y+ddy); this.moveConnected(id,el.x,el.y); }); this.scheduleScene(); return; }
+    if(this._vdrag){ const p=this.planPoint(e); const c=this.fl().cables.find(c=>c.id===this._vdrag.id); c.points[this._vdrag.i]={x:Math.round(p.x),y:Math.round(p.y)}; this.scheduleScene(); return; }
+    if(this._rvdrag){ const p=this.planPoint(e); const r=this.fl().rooms.find(r=>r.id===this._rvdrag.id); if(r){ r.points[this._rvdrag.i]={x:Math.round(p.x),y:Math.round(p.y)}; this.scheduleScene(); } return; }
+    if((this.st.tool==='cable'&&this.st.draft)||(this.st.tool==='room'&&this.st.roomDraft)||(this.st.tool==='calibrate'&&this.st.calib&&!this.st.calib.p2)){ this.st.mouse=this.planPoint(e); this.scheduleScene(); }
+  },
+  onUp(){ if(this._marq){ this._applyMarquee(); this._marq=null; this.st.marquee=null; this.renderScene(); this.renderRight(); this.renderLeft(); return; } if(this._pan){this._pan=null;this.persist();} if(this._edrag){const moved=this._edrag.moved;this._edrag=null;this.renderRight();this.persist(); if(!moved&&this.isMobile())this.openDrawer('right');} if(this._vdrag){this._vdrag=null;this.persist();} if(this._rvdrag){this._rvdrag=null;this.renderRight();this.persist();} },
+  scheduleScene(){ if(this._raf)return; this._raf=requestAnimationFrame(()=>{this._raf=null;this.renderScene();}); },
+  onDbl(){ if(this.st.tool==='cable'&&this.st.draft)this.finishCable(null); else if(this.st.tool==='room'&&this.st.roomDraft)this.finishRoom(); },
+  onContext(e){ if(this.st.draft){e.preventDefault();this.finishCable(null);} else if(this.st.roomDraft){e.preventDefault();this.finishRoom();} },
+  onWheel(e){ e.preventDefault(); const r=dom.area.getBoundingClientRect(); this.zoomAt(e.clientX-r.left,e.clientY-r.top,e.deltaY<0?1.12:1/1.12); },
+  onKey(e){
+    const tag=(e.target&&e.target.tagName)||'', typing=/INPUT|TEXTAREA|SELECT/.test(tag);
+    if(e.code==='Space'&&!typing)this._space=true;
+    if((e.key==='Delete'||e.key==='Backspace')&&!typing)this.deleteSelected();
+    if(e.key==='Escape'){ if(this.st.verteilerOpen){this.closeVerteiler();return;} if(this.st.sectionOpen){this.closeSection();return;} if(this.st.legendOpen){this.closeLegend();return;} if(this.st.draft){this.st.draft=null;this.st.mouse=null;this.renderScene();this.renderHint();} else if(this.st.roomDraft){this.st.roomDraft=null;this.st.mouse=null;this.renderScene();this.renderHint();} else if(this.st.calib){this.cancelCalib();} else if(TYPES[this.st.tool]){this.setTool('select');} else {this.clearSel();this.allRender();} }
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'&&!typing){ e.preventDefault(); this.copySel(); }
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='v'&&!typing){ e.preventDefault(); this.pasteClip(); }
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'&&!typing){ e.preventDefault(); this.duplicateSel(); }
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'&&!typing){ e.preventDefault(); this.selectAllEls(); }
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!typing){ e.preventDefault(); if(e.shiftKey)this.redo(); else this.undo(); }
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'&&!typing){ e.preventDefault(); this.redo(); }
+    if(!typing){ const m={v:'select',h:'pan',k:'cable',m:'calibrate',r:'room'}; if(m[e.key])this.setTool(m[e.key]); }
+  },
+  _clearRiserLinksTo(ids){ const set=ids instanceof Set?ids:new Set([].concat(ids)); this.st.floors.forEach(f=>f.elements.forEach(e=>{ if(e.riserLink&&set.has(e.riserLink))e.riserLink=''; })); },
+  deleteSelected(){ const s=this.st.selected; if(!s&&!this.st.selEls.length)return; this.pushUndo(); const f=this.fl();
+    if(this.st.selEls.length){ const set=new Set(this.st.selEls); this._clearRiserLinksTo(set); f.elements=f.elements.filter(e=>!set.has(e.id)); for(const c of f.cables){ if(set.has(c.fromEl))c.fromEl=null; if(set.has(c.toEl))c.toEl=null; } }
+    else if(s.kind==='element'){ this._clearRiserLinksTo(s.id); f.elements=f.elements.filter(e=>e.id!==s.id); for(const c of f.cables){ if(c.fromEl===s.id)c.fromEl=null; if(c.toEl===s.id)c.toEl=null; } }
+    else if(s.kind==='room'){ f.rooms=f.rooms.filter(r=>r.id!==s.id); }
+    else f.cables=f.cables.filter(c=>c.id!==s.id);
+    this.clearSel(); this.allRender(); this.persist();
+  },
+  updateCursor(){ const s=this.st; dom.area.style.cursor=this._space||s.tool==='pan'?'grab':(s.tool==='select'?'default':'crosshair'); },
+
+  /* ---- multi-select / clipboard / snap ---- */
+  gridPx(){ const f=this.fl(); return f.scalePxPerM?Math.max(4,(this.st.gridCm/100)*f.scalePxPerM):20; },
+  snapPt(p){ let x=p.x,y=p.y; if(this.st.snap){ const g=this.gridPx(); x=Math.round(x/g)*g; y=Math.round(y/g)*g; } return {x:Math.round(x),y:Math.round(y)}; },
+  alignSnap(x,y,excludeIds){ const th=8; let nx=x,ny=y,bx=th,by=th; for(const el of this.fl().elements){ if(excludeIds.indexOf(el.id)>=0)continue; if(this.isHidden(el.circuit))continue; const dx=Math.abs(el.x-x); if(dx<bx){bx=dx;nx=el.x;} const dy=Math.abs(el.y-y); if(dy<by){by=dy;ny=el.y;} } return {x:nx,y:ny}; },
+  isElSel(id){ return this.st.selEls.indexOf(id)>=0; },
+  selectEl(id,additive){ const s=this.st; if(additive){ const i=s.selEls.indexOf(id); if(i>=0)s.selEls.splice(i,1); else s.selEls.push(id); } else { s.selEls=[id]; } const prim=s.selEls.length?s.selEls[s.selEls.length-1]:null; s.selected=prim?{kind:'element',id:prim}:null; },
+  clearSel(){ this.st.selected=null; this.st.selEls=[]; },
+  groupEls(){ const f=this.fl(); return this.st.selEls.map(id=>f.elements.find(e=>e.id===id)).filter(Boolean); },
+  selectAllEls(){ const f=this.fl(); this.st.selEls=f.elements.filter(e=>!this.isHidden(e.circuit)).map(e=>e.id); const prim=this.st.selEls.length?this.st.selEls[this.st.selEls.length-1]:null; this.st.selected=prim?{kind:'element',id:prim}:null; this.st.rightTab='props'; this.allRender(); },
+  assignAll(field,v){ const els=this.groupEls(); if(!els.length)return; this.pushUndo(); els.forEach(e=>e[field]=v); this.allRender(); this.persist(); },
+  assignAllRiser(field,v){ const els=this.groupEls(); if(!els.length)return; this.pushUndo(); els.forEach(e=>{ e[field]=v; const p=this.riserPartner(e); if(p)p.el[field]=v; }); this.allRender(); this.persist(); },
+  rotAll(d){ const els=this.groupEls(); if(!els.length)return; this.pushUndo(); els.forEach(e=>e.rot=((e.rot||0)+d+360)%360); this.renderScene(); this.renderRight(); this.persist(); },
+  copySel(){ const els=this.groupEls(); if(!els.length)return; this._clip=els.map(e=>{const c=Object.assign({},e); delete c.id; return c;}); this.toast(els.length+(els.length===1?' Element kopiert':' Elemente kopiert')); },
+  pasteClip(){ if(!this._clip||!this._clip.length)return; this.pushUndo(); const f=this.fl(); const off=this.st.snap?this.gridPx():24; const ids=[]; this._clip.forEach((src,i)=>{ const type=src.type; const n=f.elements.filter(e=>e.type===type).length+1; const circuit=this.st.circuits.some(c=>c.id===src.circuit)?src.circuit:this.st.activeCircuit; const el=Object.assign({},src,{id:'e'+Date.now().toString(36)+i+Math.floor(Math.random()*999),x:Math.round(src.x+off),y:Math.round(src.y+off),circuit,label:(TYPES[type]?TYPES[type].prefix:'E')+n}); f.elements.push(el); ids.push(el.id); }); this.st.selEls=ids; this.st.selected=ids.length?{kind:'element',id:ids[ids.length-1]}:null; this.st.rightTab='props'; this.allRender(); this.persist(); },
+  duplicateSel(){ this.copySel(); this.pasteClip(); },
+  _applyMarquee(){ const m=this._marq; if(!m)return; const x0=Math.min(m.x0,m.x1),x1=Math.max(m.x0,m.x1),y0=Math.min(m.y0,m.y1),y1=Math.max(m.y0,m.y1); const f=this.fl(); const inside=f.elements.filter(e=>!this.isHidden(e.circuit)&&e.x>=x0&&e.x<=x1&&e.y>=y0&&e.y<=y1).map(e=>e.id); let ids=m.add?m.base.slice():[]; inside.forEach(id=>{ if(ids.indexOf(id)<0)ids.push(id); }); this.st.selEls=ids; const prim=ids.length?ids[ids.length-1]:null; this.st.selected=prim?{kind:'element',id:prim}:null; },
+  _closestOnSeg(p,a,b){ const dx=b.x-a.x,dy=b.y-a.y; const l2=dx*dx+dy*dy; if(l2===0)return {x:a.x,y:a.y}; let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/l2; t=Math.max(0,Math.min(1,t)); return {x:a.x+t*dx,y:a.y+t*dy}; },
+  wallSnap(p){ const f=this.fl(); if(!f.rooms||!f.rooms.length)return null; const TH=38; let best=null;
+    f.rooms.forEach(r=>{ if(!r.points||r.points.length<3)return; const pts=r.points, cen=this.polyCentroid(pts);
+      for(let i=0;i<pts.length;i++){ const a=pts[i],b=pts[(i+1)%pts.length]; const cp=this._closestOnSeg(p,a,b); const dd=Math.hypot(cp.x-p.x,cp.y-p.y);
+        if(dd<TH&&(!best||dd<best.dd)){ let nx=-(b.y-a.y),ny=(b.x-a.x); const ln=Math.hypot(nx,ny)||1; nx/=ln; ny/=ln; if((cen.x-cp.x)*nx+(cen.y-cp.y)*ny<0){nx=-nx;ny=-ny;} let rot=Math.round(Math.atan2(-nx,ny)*180/Math.PI); rot=((rot%360)+360)%360; best={dd,x:Math.round(cp.x),y:Math.round(cp.y),rot}; } } });
+    return best; },
+  snapElement(p,type){ if(this.st.snap&&WALL_TYPES.has(type)){ const w=this.wallSnap(p); if(w)return {x:w.x,y:w.y,rot:w.rot}; } const sp=this.snapPt(p); return {x:sp.x,y:sp.y,rot:null}; },
+  /* ---- mobile drawers ---- */
+  isMobile(){ return window.matchMedia('(max-width:900px)').matches; },
+  updateScrim(){ dom.scrim.classList.toggle('show',!!(this._leftOpen||this._rightOpen)); },
+  openDrawer(side){ this._leftOpen=side==='left'; this._rightOpen=side==='right'; dom.left.classList.toggle('open',this._leftOpen); dom.right.classList.toggle('open',this._rightOpen); this.updateScrim(); },
+  closeDrawers(){ this._leftOpen=false; this._rightOpen=false; dom.left.classList.remove('open'); dom.right.classList.remove('open'); this.updateScrim(); },
+  toggleDrawer(side){ const cur=side==='left'?this._leftOpen:this._rightOpen; if(cur)this.closeDrawers(); else this.openDrawer(side); },
+
+  /* ---- circuits ---- */
+  addCircuit(){ this.pushUndo(); const used=this.st.circuits.map(c=>c.color); const color=PALETTE.find(p=>!used.includes(p))||PALETTE[this.st.circuits.length%PALETTE.length]; const id='c'+Date.now().toString(36); const name=this.uniqueName('Stromkreis '+(this.st.circuits.length+1),this.st.circuits.map(c=>c.name)); this.st.circuits.push({id,name,color,hidden:false}); this.st.activeCircuit=id; this.renderCircuits(); this.renderLeft(); this.persist(); },
+  cycleColor(id){ this.pushUndo(); const c=this.circ(id); const i=PALETTE.indexOf(c.color); c.color=PALETTE[(i+1)%PALETTE.length]; this.allRender(); this.persist(); },
+  renameCircuit(id,v){ this.circ(id).name=v; this.persist(); },
+  validateCircuitName(id){ const c=this.circ(id); if(!c)return; const others=this.st.circuits.filter(x=>x.id!==id).map(x=>x.name); const nm=this.uniqueName((c.name||'').trim()||'Stromkreis',others); if(nm!==c.name){ if((c.name||'').trim()&&others.some(o=>o.toLowerCase()===(c.name||'').trim().toLowerCase()))this.toast('Stromkreis-Name bereits vergeben'); c.name=nm; } this.renderCircuits(); this.renderLeft(); this.persist(); },
+  toggleHide(id){ const c=this.circ(id); c.hidden=!c.hidden; this.renderCircuits(); this.renderScene(); this.renderRight(); this.persist(); },
+  delCircuit(id){ if(this.st.circuits.length<=1)return; this.pushUndo(); const fb=this.st.circuits.find(c=>c.id!==id).id; this.st.circuits=this.st.circuits.filter(c=>c.id!==id); if(this.st.activeCircuit===id)this.st.activeCircuit=fb; this.st.floors.forEach(f=>{f.elements.forEach(e=>{if(e.circuit===id)e.circuit=fb;});f.cables.forEach(c=>{if(c.circuit===id)c.circuit=fb;});}); this.allRender(); this.persist(); },
+  setActiveCircuit(id){ if(this.st.activeCircuit===id)return; this.st.activeCircuit=id; this.renderCircuits(); this.renderLeft(); },
+  showCtx(x,y,items){ this.hideCtx();
+    const menu=h('div',{style:{position:'fixed',left:x+'px',top:y+'px',zIndex:'10000',background:'#fff',border:'1px solid #e3e6e9',borderRadius:'9px',boxShadow:'0 10px 30px rgba(20,25,30,.18)',padding:'5px',minWidth:'168px',fontFamily:'var(--sans)'}});
+    items.forEach(it=>{ if(it.sep){menu.appendChild(h('div',{style:{height:'1px',background:'#eef0f2',margin:'4px 2px'}}));return;}
+      const b=h('div',{style:{padding:'7px 10px',fontSize:'13px',borderRadius:'6px',cursor:'pointer',color:it.danger?'#c0322a':'#1c2024'}},it.label);
+      b.addEventListener('mouseenter',()=>b.style.background=it.danger?'#fdf3f3':'#f1f3f5');
+      b.addEventListener('mouseleave',()=>b.style.background='transparent');
+      b.addEventListener('click',()=>{this.hideCtx();it.fn&&it.fn();});
+      menu.appendChild(b); });
+    document.body.appendChild(menu); this._ctx=menu;
+    requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>innerWidth-6)menu.style.left=Math.max(6,innerWidth-r.width-6)+'px';if(r.bottom>innerHeight-6)menu.style.top=Math.max(6,innerHeight-r.height-6)+'px';});
+    setTimeout(()=>{ this._ctxClose=ev=>{ if(this._ctx&&!this._ctx.contains(ev.target))this.hideCtx(); }; document.addEventListener('pointerdown',this._ctxClose,true); window.addEventListener('blur',this._ctxClose); },0);
+  },
+  hideCtx(){ if(this._ctx){this._ctx.remove();this._ctx=null;} if(this._ctxClose){document.removeEventListener('pointerdown',this._ctxClose,true);window.removeEventListener('blur',this._ctxClose);this._ctxClose=null;} },
+
+  /* ---- field edits ---- */
+  selEl(){ const s=this.st.selected; return s&&s.kind==='element'?this.fl().elements.find(e=>e.id===s.id):null; },
+  selCab(){ const s=this.st.selected; return s&&s.kind==='cable'?this.fl().cables.find(c=>c.id===s.id):null; },
+  editEl(f,v){ const el=this.selEl(); if(!el)return; el[f]=v; if(f==='circuit'){this.renderScene();this.renderCircuits();} else if(f==='gang'||f==='tasten'){this.renderScene();this.updateCheckBadge();} this.persist(); },
+  rotEl(d){ const el=this.selEl(); if(!el)return; this.pushUndo(); el.rot=((el.rot||0)+d+360)%360; this.renderScene(); this.renderRight(); this.persist(); },
+  editCab(f,v){ const c=this.selCab(); if(!c)return; c[f]=v; this.renderScene(); if(f==='circuit')this.renderCircuits(); this.renderRight(); this.persist(); },
+
+  confirmCalib(){ const c=this.st.calib,m=parseFloat(this.st.calibMeters); if(c&&c.p2&&m>0){ const px=Math.hypot(c.p2.x-c.p1.x,c.p2.y-c.p1.y); this.fl().scalePxPerM=px/m; this.st.calib=null; this.st.showCalib=false; this.st.calibMeters=''; this.st.tool='select'; this.renderCalib(); this.allRender(); this.persist(); } },
+  cancelCalib(){ this.st.calib=null; this.st.showCalib=false; this.st.calibMeters=''; this.renderCalib(); this.renderScene(); },
+
+  /* ---- plan import ---- */
+  importPlan(file){
+    if(!file||!/^image\//.test(file.type)){ this.toast('Bitte eine Bilddatei wählen (PNG, JPG, SVG, WEBP)'); return; }
+    const rd=new FileReader();
+    rd.onload=()=>{ const url=rd.result; const im=new Image(); im.onload=async()=>{
+      const f=this.fl(); f.planW=im.naturalWidth||2000; f.planH=im.naturalHeight||1414; f.view=null;
+      if(this.st.online&&this.st.projektId){
+        this.setStatus('Lädt Plan hoch…');
+        try{ const old=f.planFileId; const res=await Api.uploadDatei(this.st.projektId,file,f.name); f.planFileId=res.id; f.planURL=Api.fileUrl(res.id); if(old)Api.deleteDatei(old).catch(()=>{}); this.setStatus('Gespeichert'); }
+        catch(e){ f.planFileId=null; f.planURL=url; this.toast('Upload fehlgeschlagen – Plan nur in dieser Sitzung'); }
+      } else { f.planFileId=null; f.planURL=url; }
+      this.setPlanImg(); this.renderScene(); this.fit(); this.persist(); this.toast('Grundriss importiert: '+f.name);
+    }; im.onerror=()=>this.toast('Bild konnte nicht geladen werden'); im.src=url; };
+    rd.readAsDataURL(file);
+  },
+
+  /* ---- export ---- */
+  exportCsv(){
+    const f=this.fl(), st=this.st, cn=id=>{const c=this.circ(id);return c?c.name:'';}, elLbl=id=>{const e=f.elements.find(e=>e.id===id);return e?e.label:'';};
+    const esc=v=>{v=(v==null?'':String(v));return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+    const rows=[]; rows.push(['ETAGE',f.name]); rows.push([]);
+    rows.push(['ELEMENTE']); rows.push(['Bezeichnung','Typ','Ausführung','Modell','Leistung (W)','Stromkreis','Raum','Dimmgruppe','Höhe (cm)','Schaltung','Schutzart','Status','Notiz','X','Y']);
+    const ausf=e=>{const g=gangOf(e);if(g)return g+'-fach';const t=tastenOf(e);if(t)return t+'-fach';return '';};
+    const rn=e=>{const r=f.rooms.length?this._roomOfOn(f,e):null;return r?(r.name||(ROOM_TYPES[r.type]||{}).name):'';};
+    f.elements.forEach(e=>rows.push([e.label,(TYPES[e.type]||{name:e.type}).name,ausf(e),e.model,e.watt,cn(e.circuit),rn(e),e.dim,e.height,e.schaltung,e.ip,e.status||'Geplant',e.note,e.x,e.y]));
+    rows.push([]); rows.push(['KABEL']); rows.push(['Stromkreis','Kabeltyp','Länge (m)','Von','Nach','Knickpunkte']);
+    f.cables.forEach(k=>{const ct=CABLE_BY_ID[k.cableType];const m=f.scalePxPerM?(this.cableLenPx(k.points)/f.scalePxPerM).toFixed(2).replace('.',','):'';rows.push([cn(k.circuit),ct?ct.name:'',m,elLbl(k.fromEl),elLbl(k.toEl),k.points.length]);});
+    rows.push([]); rows.push(['ZUSAMMENFASSUNG JE KABELTYP']); rows.push(['Kabeltyp','Anzahl','Gesamtlänge (m)']);
+    CABLE_TYPES.forEach(ct=>{const list=f.cables.filter(k=>k.cableType===ct.id);if(!list.length)return;const px=list.reduce((s,k)=>s+this.cableLenPx(k.points),0);rows.push([ct.name,list.length,f.scalePxPerM?(px/f.scalePxPerM).toFixed(2).replace('.',','):'']);});
+    const risers=f.elements.filter(e=>e.type==='durchfuehrung');
+    if(risers.length){ rows.push([]); rows.push(['STEIGLEITUNGEN / STR\u00c4NGE']); rows.push(['Bezeichnung','Kabeltyp','Steigl\u00e4nge (m)','Verkn\u00fcpft mit (Etage)','F\u00fchrt zu UV','Notiz']);
+      risers.forEach(e=>{ const ct=CABLE_BY_ID[e.riserCable]; const p=e.riserLink?this.findRiser(e.riserLink):null; const uv=e.riserUv?this.uvInfo(e.riserUv):null; rows.push([e.label,ct?ct.name:'',(e.riserLen||'').toString(),p?(p.el.label+' / '+p.floor.name):'',uv?(uv.label+' ('+uv.floor+')'):'',e.note||'']); });
+    }
+    const csv='\ufeff'+rows.map(r=>r.map(esc).join(';')).join('\r\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Elektroplanung_'+f.name.replace(/\s+/g,'_')+'.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  },
+  exportPng(){
+    const f=this.fl(); this.st.selected=null; this.st.selEls=[]; this.st.marquee=null; this.st.draft=null; this.st.calib=null; this.renderScene();
+    setTimeout(()=>{
+      try{
+        const W=f.planW,H=f.planH;
+        const clone=dom.overlay.cloneNode(true); clone.setAttribute('width',W); clone.setAttribute('height',H); clone.setAttribute('viewBox','0 0 '+W+' '+H);
+        const xml=new XMLSerializer().serializeToString(clone); const url=URL.createObjectURL(new Blob([xml],{type:'image/svg+xml;charset=utf-8'}));
+        const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const cx=cv.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,W,H);
+        const drawOverlay=()=>{ const ov=new Image(); ov.onload=()=>{ cx.drawImage(ov,0,0,W,H); URL.revokeObjectURL(url); cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Elektroplanung_'+f.name.replace(/\s+/g,'_')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}); }; ov.onerror=()=>{URL.revokeObjectURL(url);this.toast('Export fehlgeschlagen');}; ov.src=url; };
+        if(f.planURL){ const plan=new Image(); plan.onload=()=>{ cx.drawImage(plan,0,0,W,H); drawOverlay(); }; plan.onerror=drawOverlay; plan.src=f.planURL; }
+        else drawOverlay();
+      }catch(e){ this.toast('Export fehlgeschlagen: '+e.message); }
+    },50);
+  },
+
+  /* ============== Normprüfung ============== */
+  circBreaker(c){ return BREAKERS[c.breaker||this.suggestBreaker(c).breaker]||BREAKERS.B16; },
+  circHasRcd(c){ return c.rcd!==undefined?c.rcd:this.suggestBreaker(c).rcd; },
+  suggestBreaker(c){
+    let sumW=0,hasStark=false,has230=false,feucht=false,onlyLight=true,any=false;
+    this.st.floors.forEach(f=>f.elements.forEach(e=>{ if(e.circuit!==c.id)return; if(NONLOAD.has(e.type))return; any=true; sumW+=parseFloat(e.watt)||0;
+      if(e.type==='steckdose_stark'||e.type==='herd')hasStark=true;
+      if(GRP.socket230(e.type))has230=true;
+      if(!(GRP.light(e.type)||GRP.sw(e.type)||GRP.presence(e.type)))onlyLight=false; }));
+    this.st.floors.forEach(f=>f.elements.forEach(e=>{ if(e.circuit!==c.id)return; const r=f.rooms.length?this._roomOfOn(f,e):null; if(r){const rt=ROOM_TYPES[r.type]; if(rt&&rt.feucht)feucht=true;} }));
+    const rcd=has230||feucht;
+    let breaker='B16';
+    if(hasStark)breaker=sumW>11000?'B25_3':'B16_3';
+    else if(any&&onlyLight)breaker=sumW>2000?'B16':'B13';
+    else breaker=sumW>3680?'B20':'B16';
+    return {breaker,rcd,mm2:BREAKERS[breaker].mm2};
+  },
+  _roomOfOn(f,el){ for(let i=f.rooms.length-1;i>=0;i--){ const r=f.rooms[i]; if(r.points&&r.points.length>=3&&this.pointInPoly(el.x,el.y,r.points))return r; } return null; },
+  runChecks(){
+    const f=this.fl(), out=[];
+    const add=(sev,cat,text,target)=>out.push({sev,cat,text,target});
+    const circEls=id=>f.elements.filter(e=>e.circuit===id&&!NONLOAD.has(e.type));
+    const watt=e=>parseFloat(e.watt)||0;
+    // ---- Plan-Ebene ----
+    if(!f.scalePxPerM)add('tip','Maßstab','Maßstab nicht gesetzt – Längen, Flächen und Mindestabstände können nicht geprüft werden. Werkzeug „Maßstab".');
+    if(f.elements.length&&!f.elements.some(e=>GRP.smoke(e.type)))add('warn','Rauchmelder','Auf dieser Etage ist kein Rauchmelder platziert (DIN 14676 / Landesbauordnung: Schlafräume, Kinderzimmer und Flure als Rettungswege).');
+    // ---- Stromkreis-Ebene ----
+    this.st.circuits.forEach(c=>{
+      const els=circEls(c.id); if(!els.length){ add('tip','Stromkreis','Stromkreis „'+c.name+'" enthält keine Elemente.',{kind:'circuit',id:c.id}); return; }
+      const brk=this.circBreaker(c), rcd=this.circHasRcd(c);
+      const socks=els.filter(e=>GRP.socket(e.type)), lights=els.filter(e=>GRP.light(e.type)), bigs=els.filter(e=>GRP.big(e.type));
+      const sumW=els.reduce((s,e)=>s+watt(e),0);
+      // Last vs. Sicherung
+      if(sumW>brk.watt)add('error','Last','Stromkreis „'+c.name+'": angeschlossene Leistung '+sumW+' W übersteigt die Belastbarkeit von '+BREAKER_LABEL(c.breaker||'B16')+' (≈ '+brk.watt+' W).',{kind:'circuit',id:c.id});
+      else if(sumW>brk.watt*0.8&&sumW<=brk.watt)add('tip','Last','Stromkreis „'+c.name+'" ist zu über 80 % ausgelastet ('+sumW+' / '+brk.watt+' W).',{kind:'circuit',id:c.id});
+      // Spannungsfall (VDE 0100-520: ≤3 % Beleuchtung, ≤5 % übrige Verbraucher)
+      const vd=this.circVoltDrop(c); const isLightOnly=lights.length&&!socks.length&&!bigs.length; const vdLimit=isLightOnly?3:5;
+      if(f.scalePxPerM&&vd.L&&vd.pct>0){
+        const vtxt='Stromkreis „'+c.name+'": Spannungsfall ≈ '+vd.pct.toFixed(1).replace('.',',')+' % ('+vd.volt.toFixed(1).replace('.',',')+' V) bei '+vd.L.toFixed(1).replace('.',',')+' m / '+this.mm2Num(c).toString().replace('.',',')+' mm² / '+vd.I.toFixed(1).replace('.',',')+' A';
+        if(vd.pct>vdLimit)add('error','Spannungsfall',vtxt+' – über dem Richtwert von '+vdLimit+' %. Größeren Querschnitt wählen oder Leitung kürzen.',{kind:'circuit',id:c.id});
+        else if(vd.pct>vdLimit*0.8)add('tip','Spannungsfall',vtxt+' – nahe am Richtwert von '+vdLimit+' %.',{kind:'circuit',id:c.id});
+      }
+      // Steckdosen je Kreis (Faustregel max. ~10 Einheiten an B16)
+      const sockUnits=socks.reduce((s,e)=>s+socketUnits(e),0);
+      if(sockUnits>10)add('warn','Steckdosen','Stromkreis „'+c.name+'" hat '+sockUnits+' Steckdosen – Richtwert max. 10 je abgesichertem Kreis.',{kind:'circuit',id:c.id});
+      // Großverbraucher eigener Kreis
+      bigs.forEach(b=>{ if(els.length>1)add('warn','Großverbraucher','„'+b.label+'" ('+(TYPES[b.type]||{}).name+') sollte einen eigenen Stromkreis erhalten – teilt sich „'+c.name+'" mit '+(els.length-1)+' weiteren Verbrauchern.',{kind:'element',id:b.id}); });
+      // Licht + Steckdosen gemischt (Komfort)
+      if(socks.length&&lights.length)add('tip','Aufteilung','Stromkreis „'+c.name+'" mischt Beleuchtung und Steckdosen – getrennte Kreise erhöhen die Verfügbarkeit bei Auslösung.',{kind:'circuit',id:c.id});
+      // RCD bei Steckdosenkreisen (DIN VDE 0100-410, seit 2018)
+      if(socks.some(e=>GRP.socket230(e.type))&&!rcd)add('error','RCD','Stromkreis „'+c.name+'" versorgt Steckdosen ohne FI/RCD 30 mA – im Wohnbereich für alle Steckdosen ≤ 32 A vorgeschrieben.',{kind:'circuit',id:c.id});
+      // 400 V ohne passenden Querschnitt-Hinweis
+      if(els.some(e=>e.type==='steckdose_stark')&&!(brk.phasen===3))add('tip','Drehstrom','Stromkreis „'+c.name+'" enthält einen 400-V-Anschluss – als 3-phasigen Automaten (z. B. 3~ B16) absichern.',{kind:'circuit',id:c.id});
+    });
+    // ---- Raum-Ebene ----
+    f.rooms.forEach(r=>{
+      if(!r.points||r.points.length<3)return;
+      const rt=ROOM_TYPES[r.type]||ROOM_TYPES.sonstiges;
+      const inside=f.elements.filter(e=>{const ro=this.roomOf(e);return ro&&ro.id===r.id;});
+      const socks=inside.filter(e=>GRP.socket(e.type)), lights=inside.filter(e=>GRP.light(e.type));
+      const nSock=socks.reduce((s,e)=>s+socketUnits(e),0);
+      const sw=inside.filter(e=>GRP.sw(e.type)||GRP.presence(e.type)), smoke=inside.filter(e=>GRP.smoke(e.type));
+      const nm='„'+(r.name||rt.name)+'"';
+      // Rauchmelderpflicht
+      if((rt.schlaf||rt.rettung)&&!smoke.length)add('error','Rauchmelder',nm+' ('+rt.name+') benötigt mindestens einen Rauchmelder (DIN 14676).',{kind:'room',id:r.id});
+      // Feuchtraum: Steckdosen über RCD
+      if(rt.feucht&&socks.length){ const ok=socks.every(e=>{const c=this.circ(e.circuit);return c&&this.circHasRcd(c);}); if(!ok)add('error','RCD',nm+' ist ein Feuchtraum – alle Steckdosen müssen über FI/RCD 30 mA laufen.',{kind:'room',id:r.id}); }
+      if(rt.feucht){ const lowIp=inside.filter(e=>(GRP.socket(e.type)||GRP.sw(e.type))&&(!e.ip||e.ip==='IP20')); if(lowIp.length)add('tip','Schutzart',nm+' (Feuchtraum): '+lowIp.length+' Steckdose(n)/Schalter ohne erhöhte Schutzart – im Spritzwasserbereich mind. IP44 vorsehen.',{kind:'room',id:r.id}); }
+      if(r.type==='bad')add('tip','Schutzbereiche',nm+': Schutzbereiche beachten – Steckdosen mind. 60 cm neben Dusche/Wanne, in Bereich 0/1 keine Betriebsmittel (DIN VDE 0100-701).',{kind:'room',id:r.id});
+      // Mindestausstattung Steckdosen
+      if(rt.minSteckdosen&&nSock<rt.minSteckdosen)add('warn','Mindestausstattung',nm+' hat '+nSock+' von empfohlenen '+rt.minSteckdosen+' Steckdosen (DIN 18015-2).',{kind:'room',id:r.id});
+      // Mindestbeleuchtung
+      if(rt.minLicht&&!lights.length)add('warn','Beleuchtung',nm+' hat keinen Lichtauslass.',{kind:'room',id:r.id});
+      // Schalter zur Beleuchtung
+      if(lights.length&&!sw.length)add('tip','Bedienung',nm+' hat Beleuchtung, aber keinen Schalter/Taster/Melder im Raum.',{kind:'room',id:r.id});
+    });
+    // Elemente außerhalb jedes Raums
+    if(f.rooms.length){ const orphan=f.elements.filter(e=>!this.roomOf(e)); if(orphan.length)add('tip','Zuordnung',orphan.length+' Element(e) liegen außerhalb aller Räume und werden in der Raumprüfung nicht erfasst.'); }
+    // ---- Unterverteiler-Bilanz (UV-Zuleitung / Last) ----
+    f.elements.filter(e=>e.type==='unterverteiler').forEach(uv=>{
+      const tot=this.uvTotals(uv.id), sup=this.uvSupplyRisers(uv.id);
+      if(tot.nCirc>0&&!sup.length)add('warn','UV-Zuleitung','Unterverteiler „'+uv.label+'" versorgt '+tot.nCirc+' Stromkreis(e) (≈ '+tot.sumW+' W / '+tot.ampere.toFixed(1).replace('.',',')+' A), hat aber keine Zuleitung. Lege auf einer anderen Etage einen Steigpunkt an und wähle „Führt zu UV: '+uv.label+'".',{kind:'element',id:uv.id});
+      sup.forEach(s=>{ if(!s.cable)add('tip','UV-Zuleitung','Zuleitung zu „'+uv.label+'" (Steigpunkt '+s.label+' · '+s.floor+') hat keinen Kabeltyp – für die Auswertung beim Steigpunkt hinterlegen.',{kind:'element',id:uv.id});
+        else { const mm2=this.cableMm2(s.cable), cap=this.cableAmp(mm2); if(cap&&tot.ampere>cap)add('error','UV-Zuleitung','Zuleitung zu „'+uv.label+'" ('+s.cable.short+' ≈ '+cap+' A) ist für die UV-Last von '+tot.ampere.toFixed(1).replace('.',',')+' A zu klein dimensioniert.',{kind:'element',id:uv.id}); } });
+    });
+    const order={error:0,warn:1,tip:2};
+    out.sort((a,b)=>order[a.sev]-order[b.sev]);
+    return out;
+  },
+
+  /* ============== Verteiler-/Stromlaufplan ============== */
+  circAggregate(c){
+    let sumW=0,nSock=0,nLight=0,nElem=0; const rooms=new Set(),floors=new Set();
+    this.st.floors.forEach(f=>f.elements.forEach(e=>{ if(e.circuit!==c.id)return; if(NONLOAD.has(e.type))return; nElem++; sumW+=parseFloat(e.watt)||0; if(GRP.socket(e.type))nSock+=socketUnits(e); if(GRP.light(e.type))nLight++; floors.add(f.name); const r=f.rooms.length?this._roomOfOn(f,e):null; if(r)rooms.add(r.name||(ROOM_TYPES[r.type]||{}).name); }));
+    return {sumW,nSock,nLight,nElem,rooms:[...rooms],floors:[...floors]};
+  },
+  circuitCableLenM(c){ let m=0; const risers=new Set(); this.st.floors.forEach(f=>{ const sp=f.scalePxPerM; f.cables.forEach(cab=>{ if(cab.circuit!==c.id)return; if(sp)m+=this.cableLenPx(cab.points)/sp; [cab.fromEl,cab.toEl].forEach(id=>{ if(!id)return; const el=f.elements.find(e=>e.id===id); if(el&&el.type==='durchfuehrung'){ const key=el.riserLink?[el.id,el.riserLink].sort().join('|'):el.id; if(risers.has(key))return; risers.add(key); m+=parseFloat((el.riserLen||'').toString().replace(',','.'))||0; } }); }); }); return m; },
+  fmtLen2(m){ if(!m)return '0 m'; return (m>=10?m.toFixed(1):m.toFixed(2)).replace('.',',')+' m'; },
+  editCircuitField(id,field,val){ const c=this.circ(id); if(!c)return; this.pushUndo(); if(field==='rcd')c.rcd=val; else if(field==='breaker'){c.breaker=val; if(!c.mm2||c.mm2===''){}} else c[field]=val; this.allRender(); this.renderVerteiler(); this.persist(); },
+  resetCircuitSuggest(id){ const c=this.circ(id); if(!c)return; this.pushUndo(); delete c.breaker; delete c.rcd; delete c.mm2; this.allRender(); this.renderVerteiler(); this.persist(); },
+  openVerteiler(){ this.st.sectionOpen=false; this.st.legendOpen=false; this.st.verteilerOpen=true; this.renderVerteiler(); },
+  closeVerteiler(){ this.st.verteilerOpen=false; clear(dom.verteilerHost); },
+  poleGlyph(threephase){ return h('svg',{width:22,height:30,viewBox:'0 0 22 30'},h('rect',{x:3,y:2,width:16,height:26,rx:2,fill:'#fff',stroke:'#374151',strokeWidth:1.4}),h('line',{x1:11,y1:6,x2:11,y2:13,stroke:'#374151',strokeWidth:1.4}),h('line',{x1:11,y1:13,x2:16,y2:18,stroke:'#374151',strokeWidth:1.6}),h('circle',{cx:11,cy:6,r:1.5,fill:'#374151'}),threephase?h('text',{x:11,y:25,fontSize:6,textAnchor:'middle',fill:'#374151',fontFamily:'monospace',fontWeight:700},'3~'):null); },
+  breakerCard(c){
+    const sug=this.suggestBreaker(c), agg=this.circAggregate(c);
+    const bKey=c.breaker||sug.breaker, brk=BREAKERS[bKey]||BREAKERS.B16;
+    const rcd=this.circHasRcd(c), mm2=c.mm2||brk.mm2;
+    const isAuto=!c.breaker&&c.rcd===undefined&&!c.mm2;
+    const over=agg.sumW>brk.watt;
+    const card=h('div',{style:{display:'flex',gap:'12px',padding:'12px 14px',border:'1px solid #e3e6e9',borderRadius:'10px',background:'#fff',alignItems:'flex-start'}});
+    card.appendChild(h('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',gap:'5px',flex:'none'}},this.poleGlyph(brk.phasen===3),h('span',{style:{width:'14px',height:'6px',borderRadius:'2px',background:c.color}})));
+    const mid=h('div',{style:{flex:'1',minWidth:'0'}});
+    mid.appendChild(h('div',{style:{display:'flex',alignItems:'baseline',gap:'8px',marginBottom:'3px'}},
+      h('span',{style:{fontSize:'14px',fontWeight:700,color:'#1c2024'}},c.name),
+      isAuto?h('span',{style:{fontSize:'10px',fontWeight:700,color:'#2563eb',background:'#eef3fb',borderRadius:'5px',padding:'1px 6px'}},'AUTO-VORSCHLAG'):null));
+    mid.appendChild(h('div',{style:{fontSize:'11.5px',color:'#6b7280',fontFamily:'var(--mono)',marginBottom:'2px'}},
+      agg.nElem+' Verbr.  ·  '+agg.nSock+' SD  ·  '+agg.nLight+' L  ·  '+(over?'⚠ ':'')+agg.sumW+' / '+brk.watt+' W  ·  '+this.fmtLen2(this.circuitCableLenM(c))));
+    {const vd=this.circVoltDrop(c); const isLightOnly=agg.nLight>0&&agg.nSock===0; const lim=isLightOnly?3:5; if(vd.L&&vd.pct>0)mid.appendChild(h('div',{style:{fontSize:'11px',fontFamily:'var(--mono)',color:vd.pct>lim?'#c0322a':(vd.pct>lim*0.8?'#b46b09':'#9aa1a8'),fontWeight:vd.pct>lim?700:400}},'ΔU ≈ '+vd.pct.toFixed(1).replace('.',',')+' % (Grenze '+lim+' %)'));}
+    if(agg.rooms.length)mid.appendChild(h('div',{style:{fontSize:'11px',color:'#9aa1a8',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},'Räume: '+agg.rooms.join(', ')));
+    const risers=this.circuitRisers(c);
+    if(risers.length)mid.appendChild(h('div',{style:{fontSize:'11px',color:'#2563eb',fontWeight:600,fontFamily:'var(--mono)',marginTop:'2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},'\u2195 Steigleitung: '+risers.map(r=>r.label+(r.cable?' '+r.cable:'')+(r.toFloor?' \u2192 '+r.toFloor:'')).join(', ')));
+    card.appendChild(mid);
+    // editable controls
+    const ctrls=h('div',{className:'v-noprint',style:{display:'flex',gap:'7px',alignItems:'center',flex:'none'}});
+    const uvList=this.allUVs(); if(uvList.length){ const uvSel=h('select',{className:'sel',title:'Unterverteiler-Zuordnung',style:{width:'78px',height:'30px',padding:'0 6px',fontSize:'12px'}}); uvSel.appendChild(h('option',{value:''},'HV')); uvList.forEach(u=>uvSel.appendChild(h('option',{value:u.id},u.label))); uvSel.value=c.uv&&uvList.some(u=>u.id===c.uv)?c.uv:''; uvSel.addEventListener('change',e=>this.editCircuitField(c.id,'uv',e.target.value)); ctrls.appendChild(uvSel); }
+    const bsel=h('select',{className:'sel',style:{width:'112px',height:'30px',padding:'0 6px',fontSize:'12px'}}); BREAKER_KEYS.forEach(k=>bsel.appendChild(h('option',{value:k},BREAKER_LABEL(k)))); bsel.value=bKey; bsel.addEventListener('change',e=>this.editCircuitField(c.id,'breaker',e.target.value));
+    const mInp=h('input',{className:'inp',title:'Querschnitt mm²',style:{width:'56px',height:'30px',padding:'0 6px',fontSize:'12px',fontFamily:'var(--mono)'}}); mInp.value=mm2; mInp.addEventListener('change',e=>this.editCircuitField(c.id,'mm2',e.target.value));
+    const rcdL=h('label',{title:'FI/RCD 30 mA',style:{display:'flex',alignItems:'center',gap:'4px',fontSize:'12px',color:'#374151',cursor:'pointer'}}); const rcdC=h('input',{type:'checkbox',style:{accentColor:'#374151',width:'15px',height:'15px'}}); rcdC.checked=rcd; rcdC.addEventListener('change',e=>this.editCircuitField(c.id,'rcd',e.target.checked)); rcdL.appendChild(rcdC); rcdL.appendChild(h('span',null,'RCD'));
+    ctrls.appendChild(bsel); ctrls.appendChild(h('span',{style:{fontSize:'11px',color:'#9aa1a8'}},'mm²')); ctrls.appendChild(mInp); ctrls.appendChild(rcdL);
+    if(!isAuto)ctrls.appendChild(h('button',{className:'iconbtn',title:'Auf Vorschlag zurücksetzen',style:{fontSize:'14px'},onClick:()=>this.resetCircuitSuggest(c.id)},'↺'));
+    card.appendChild(ctrls);
+    // print-only static values
+    card.appendChild(h('div',{style:{display:'none',flex:'none',textAlign:'right',fontFamily:'var(--mono)',fontSize:'12px',color:'#1c2024'},className:'v-printonly'},BREAKER_LABEL(bKey)+' · '+mm2+' mm²'+(rcd?' · RCD':'')));
+    return card;
+  },
+  renderVerteiler(){
+    clear(dom.verteilerHost);
+    if(!this.st.verteilerOpen)return;
+    const circuits=this.st.circuits.slice();
+    const rcdC=circuits.filter(c=>this.circHasRcd(c)), plainC=circuits.filter(c=>!this.circHasRcd(c));
+    const groups=[]; for(let i=0;i<rcdC.length;i+=6)groups.push(rcdC.slice(i,i+6));
+    const totalW=circuits.reduce((s,c)=>s+this.circAggregate(c).sumW,0);
+    const proj=(this.st.projekte.find(p=>p.id===this.st.projektId)||{}).name||'Elektroplanung';
+    const today=new Date().toLocaleDateString('de-DE');
+    const sheet=h('div',{className:'v-sheet',style:{maxWidth:'940px',margin:'0 auto',background:'#fff',borderRadius:'12px',boxShadow:'0 18px 50px rgba(0,0,0,.3)',overflow:'hidden'}});
+    // toolbar
+    sheet.appendChild(h('div',{className:'v-noprint',style:{display:'flex',alignItems:'center',gap:'10px',padding:'13px 18px',borderBottom:'1px solid #e4e7ea',background:'#fbfcfc'}},
+      h('span',{style:{fontWeight:700,fontSize:'15px',flex:'1'}},'Verteiler-/Stromlaufplan'),
+      h('button',{className:'tbtn',onClick:()=>this.printVerteiler()},'⎙ Drucken / PDF'),
+      h('button',{className:'tbtn primary',onClick:()=>this.closeVerteiler()},'Schließen')));
+    const body=h('div',{style:{padding:'24px 28px 30px'}});
+    // header
+    body.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',borderBottom:'2px solid #1c2024',paddingBottom:'10px',marginBottom:'18px'}},
+      h('div',null,h('div',{style:{fontSize:'20px',fontWeight:700}},'Stromkreisverteiler'),h('div',{style:{fontSize:'13px',color:'#6b7280',marginTop:'2px'}},proj)),
+      h('div',{style:{textAlign:'right',fontSize:'11.5px',color:'#6b7280',fontFamily:'var(--mono)',lineHeight:'1.6'}},
+        circuits.length+' Stromkreise · '+rcdC.length+' mit RCD',h('br'),'Gesamtlast ≈ '+totalW+' W ('+(totalW/230).toFixed(1)+' A)',h('br'),'Stand '+today)));
+    // supply chain
+    const chip=(t,sub)=>h('div',{style:{flex:'none',border:'1.5px solid #cbd1d6',borderRadius:'8px',padding:'8px 12px',textAlign:'center',background:'#f9fafb'}},h('div',{style:{fontSize:'12.5px',fontWeight:700,color:'#1c2024'}},t),sub?h('div',{style:{fontSize:'10.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},sub):null);
+    const arrow=()=>h('div',{style:{flex:'none',color:'#9aa1a8',fontSize:'18px',alignSelf:'center'}},'→');
+    body.appendChild(h('div',{style:{display:'flex',gap:'10px',alignItems:'center',marginBottom:'22px',flexWrap:'wrap'}},
+      chip('Netz','400/230 V'),arrow(),chip('Zähler'),arrow(),chip('SLS / Hauptschalter','63 A'),arrow(),chip('Sammelschiene','L1·L2·L3·N·PE')));
+    // groups
+    const mkGroup=(title,sub,accent,cards)=>{ const box=h('div',{style:{border:'1.5px solid '+(accent||'#d7dbdf'),borderRadius:'12px',padding:'14px',marginBottom:'16px',background:accent?accent+'08':'#fcfcfd'}});
+      box.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}},
+        h('span',{style:{fontSize:'12px',fontWeight:700,letterSpacing:'.04em',color:accent||'#374151'}},title),
+        sub?h('span',{style:{fontSize:'11px',color:'#9aa1a8',fontFamily:'var(--mono)'}},sub):null));
+      const grid=h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}}); cards.forEach(cd=>grid.appendChild(cd)); box.appendChild(grid); return box; };
+    // ---- Sektionen je Unterverteiler (UV) ----
+    const uvs=this.allUVs();
+    const sections=uvs.map(u=>({id:u.id,title:'Unterverteiler '+u.label,sub:u.floor,circuits:this.circuitsForUv(u.id)}));
+    const unassigned=circuits.filter(c=>!(c.uv&&uvs.some(u=>u.id===c.uv)));
+    sections.push({id:'',title:uvs.length?'Hauptverteiler / nicht zugeordnet':'Hauptverteiler',sub:'',circuits:unassigned});
+    sections.forEach(sec=>{
+      if(sec.id===''&&!sec.circuits.length&&uvs.length)return;
+      const rc=sec.circuits.filter(c=>this.circHasRcd(c)), pc=sec.circuits.filter(c=>!this.circHasRcd(c));
+      const grps=[]; for(let i=0;i<rc.length;i+=6)grps.push(rc.slice(i,i+6));
+      const secLoad=sec.circuits.reduce((s,c)=>s+this.circAggregate(c).sumW,0);
+      const secLen=sec.circuits.reduce((s,c)=>s+this.circuitCableLenM(c),0);
+      const fis=grps.length;
+      const secBox=h('div',{style:{border:'1.5px solid #cbd1d6',borderRadius:'14px',padding:'14px 14px 2px',marginBottom:'20px',background:'#fff'}});
+      secBox.appendChild(h('div',{style:{display:'flex',alignItems:'baseline',gap:'10px',marginBottom:'12px',flexWrap:'wrap'}},
+        h('span',{style:{fontSize:'14px',fontWeight:800,color:'#1c2024'}},sec.title),
+        sec.sub?h('span',{style:{fontSize:'11px',color:'#9aa1a8',fontFamily:'var(--mono)'}},sec.sub):null,
+        h('span',{style:{flex:'1'}}),
+        h('span',{style:{fontSize:'11.5px',color:'#6b7280',fontFamily:'var(--mono)'}},sec.circuits.length+' SK · '+fis+'× FI · ≈ '+secLoad+' W · '+this.fmtLen2(secLen)+' Kabel')));
+      if(!sec.circuits.length)secBox.appendChild(h('div',{style:{padding:'4px 2px 14px',fontSize:'12px',color:'#9aa1a8'}},'Keine Stromkreise zugeordnet.'));
+      grps.forEach((g,i)=>{ const load=g.reduce((s,c)=>s+this.circAggregate(c).sumW,0); secBox.appendChild(mkGroup('FI/RCD 30 mA — Gruppe '+(i+1),g.length+' Automaten · ≈ '+load+' W','#0d9488',g.map(c=>this.breakerCard(c)))); });
+      if(pc.length)secBox.appendChild(mkGroup('Ohne RCD (z. B. fest angeschlossene Verbraucher)',pc.length+' Automaten','#b46b09',pc.map(c=>this.breakerCard(c))));
+      body.appendChild(secBox);
+    });
+    if(!circuits.length)body.appendChild(h('div',{style:{padding:'30px',textAlign:'center',color:'#9aa1a8'}},'Keine Stromkreise angelegt.'));
+    body.appendChild(h('div',{style:{fontSize:'11px',color:'#9aa1a8',lineHeight:'1.55',marginTop:'10px',borderTop:'1px solid #eef0f2',paddingTop:'12px'}},'Automaten, Querschnitte und RCD-Zuordnung sind Vorschläge auf Basis der angeschlossenen Verbraucher und können je Stromkreis angepasst werden. Keine Gewähr – verbindliche Auslegung durch die ausführende Elektrofachkraft.'));
+    sheet.appendChild(body);
+    const ov=h('div',{id:'verteilerOverlay',style:{position:'fixed',inset:'0',zIndex:'70',background:'rgba(28,32,36,.45)',overflow:'auto',padding:'28px 18px'}},sheet);
+    ov.addEventListener('pointerdown',e=>{ if(e.target===ov)this.closeVerteiler(); });
+    dom.verteilerHost.appendChild(ov);
+  },
+  printVerteiler(){ document.body.classList.add('printVerteiler'); const cleanup=()=>{document.body.classList.remove('printVerteiler');window.removeEventListener('afterprint',cleanup);}; window.addEventListener('afterprint',cleanup); setTimeout(()=>window.print(),60); },
+  printSheet(){ document.body.classList.add('printSheet'); const cleanup=()=>{document.body.classList.remove('printSheet');window.removeEventListener('afterprint',cleanup);}; window.addEventListener('afterprint',cleanup); setTimeout(()=>window.print(),60); },
+  _sheetOverlay(sheet){ const ov=h('div',{id:'sheetOverlay',style:{position:'fixed',inset:'0',zIndex:'70',background:'rgba(28,32,36,.45)',overflow:'auto',padding:'28px 18px'}},sheet); return ov; },
+
+  /* ============== Gebäudeschnitt / Steigstränge ============== */
+  buildStrangs(){
+    const floors=this.st.floors, idxOf={}; floors.forEach((f,i)=>idxOf[f.id]=i);
+    const seen=new Set(), strangs=[];
+    floors.forEach((f,fi)=>f.elements.forEach(e=>{ if(e.type!=='durchfuehrung')return;
+      const key=e.riserLink?[e.id,e.riserLink].sort().join('|'):e.id; if(seen.has(key))return; seen.add(key);
+      const members=[{el:e,fi}]; let cableEl=e;
+      if(e.riserLink){ const p=this.findRiser(e.riserLink); if(p){ members.push({el:p.el,fi:idxOf[p.floor.id]}); if(!e.riserCable&&p.el.riserCable)cableEl=p.el; } }
+      members.sort((a,b)=>a.fi-b.fi);
+      const ct=CABLE_BY_ID[cableEl.riserCable]||null;
+      const uv=e.riserUv?this.uvInfo(e.riserUv):(e.riserLink&&this.findRiser(e.riserLink)&&this.findRiser(e.riserLink).el.riserUv?this.uvInfo(this.findRiser(e.riserLink).el.riserUv):null);
+      const len=parseFloat((e.riserLen||'').toString().replace(',','.'))||0;
+      strangs.push({key,members,label:e.label,cable:ct,uv,len,linked:!!e.riserLink}); }));
+    return strangs;
+  },
+  openSection(){ this.st.verteilerOpen=false; this.st.legendOpen=false; this.st.sectionOpen=true; this.renderSection(); },
+  closeSection(){ this.st.sectionOpen=false; clear(dom.verteilerHost); },
+  renderSection(){
+    clear(dom.verteilerHost); if(!this.st.sectionOpen)return;
+    const floors=this.st.floors, nF=floors.length, strangs=this.buildStrangs();
+    const proj=(this.st.projekte.find(p=>p.id===this.st.projektId)||{}).name||'Elektroplanung';
+    const today=new Date().toLocaleDateString('de-DE');
+    const sheet=h('div',{className:'v-sheet',style:{maxWidth:'940px',margin:'0 auto',background:'#fff',borderRadius:'12px',boxShadow:'0 18px 50px rgba(0,0,0,.3)',overflow:'hidden'}});
+    sheet.appendChild(h('div',{className:'v-noprint',style:{display:'flex',alignItems:'center',gap:'10px',padding:'13px 18px',borderBottom:'1px solid #e4e7ea',background:'#fbfcfc'}},
+      h('span',{style:{fontWeight:700,fontSize:'15px',flex:'1'}},'Gebäudeschnitt · Steigstränge'),
+      h('button',{className:'tbtn',onClick:()=>this.printSheet()},'⎙ Drucken / PDF'),
+      h('button',{className:'tbtn primary',onClick:()=>this.closeSection()},'Schließen')));
+    const body=h('div',{style:{padding:'24px 28px 30px'}});
+    body.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',borderBottom:'2px solid #1c2024',paddingBottom:'10px',marginBottom:'20px'}},
+      h('div',null,h('div',{style:{fontSize:'20px',fontWeight:700}},'Gebäudeschnitt'),h('div',{style:{fontSize:'13px',color:'#6b7280',marginTop:'2px'}},proj)),
+      h('div',{style:{textAlign:'right',fontSize:'11.5px',color:'#6b7280',fontFamily:'var(--mono)',lineHeight:'1.6'}},nF+' Etagen · '+strangs.length+' Steigstrang/-stränge',h('br'),'Reihenfolge oben → unten = Etagen-Liste',h('br'),'Stand '+today)));
+    // SVG-Schnitt
+    const LEFT=140, TOP=70, BAND=92, COL=120, RIGHTPAD=30;
+    const nCols=Math.max(strangs.length,1);
+    const W=LEFT+40+nCols*COL+RIGHTPAD, H=TOP+nF*BAND+20;
+    const cy=fi=>TOP+fi*BAND+BAND/2;
+    const colX=j=>LEFT+50+j*COL;
+    const svg=h('svg',{width:'100%',viewBox:'0 0 '+W+' '+H,style:{display:'block',maxWidth:W+'px',margin:'0 auto'}});
+    // Etagen-Bänder
+    floors.forEach((f,i)=>{
+      svg.appendChild(h('rect',{x:0,y:TOP+i*BAND,width:W,height:BAND,fill:i%2?'#f6f7f8':'#fcfcfd',stroke:'#e4e7ea',strokeWidth:1}));
+      svg.appendChild(h('text',{x:16,y:cy(i)-6,fontSize:15,fontWeight:700,fill:'#1c2024',fontFamily:'var(--sans)'},f.name||'Etage'));
+      const nEl=f.elements.length, nUv=f.elements.filter(e=>e.type==='unterverteiler').length;
+      svg.appendChild(h('text',{x:16,y:cy(i)+13,fontSize:11,fill:'#9aa1a8',fontFamily:'var(--mono)'},nEl+' Obj.'+(nUv?' · '+nUv+' UV':'')));
+      // UV-Chips rechts
+      const uvs=f.elements.filter(e=>e.type==='unterverteiler'); let ux=W-RIGHTPAD-10;
+      uvs.slice().reverse().forEach(u=>{ const tot=this.uvTotals(u.id); const lbl='UV '+u.label; const bw=Math.max(46,lbl.length*7+14); ux-=bw+8;
+        svg.appendChild(h('rect',{x:ux,y:cy(i)-16,width:bw,height:32,rx:6,fill:'#fff',stroke:'#374151',strokeWidth:1.4}));
+        svg.appendChild(h('text',{x:ux+bw/2,y:cy(i)-3,fontSize:11,fontWeight:700,fill:'#1c2024',textAnchor:'middle',fontFamily:'var(--mono)'},lbl));
+        svg.appendChild(h('text',{x:ux+bw/2,y:cy(i)+10,fontSize:9.5,fill:'#9aa1a8',textAnchor:'middle',fontFamily:'var(--mono)'},Math.round(tot.ampere)+' A')); });
+    });
+    // Stränge
+    strangs.forEach((s,j)=>{
+      const x=colX(j), col=s.cable?'#2563eb':'#9aa1a8';
+      const fis=s.members.map(m=>m.fi); const top=Math.min(...fis), bot=Math.max(...fis);
+      if(bot>top){ svg.appendChild(h('line',{x1:x,y1:cy(top),x2:x,y2:cy(bot),stroke:col,strokeWidth:3}));
+        // Richtungspfeile
+        [[cy(top),1],[cy(bot),-1]].forEach(([yy,d])=>svg.appendChild(h('path',{d:`M ${x-5} ${yy+9*d} L ${x} ${yy+d} L ${x+5} ${yy+9*d}`,fill:'none',stroke:col,strokeWidth:3,strokeLinejoin:'round',strokeLinecap:'round'}))); }
+      s.members.forEach(m=>{ svg.appendChild(h('circle',{cx:x,cy:cy(m.fi),r:7,fill:'#fff',stroke:col,strokeWidth:3})); svg.appendChild(h('text',{x:x+12,y:cy(m.fi)+4,fontSize:11,fontWeight:600,fill:col,fontFamily:'var(--mono)'},m.el.label)); });
+      // Kopf-Label
+      svg.appendChild(h('text',{x:x,y:TOP-32,fontSize:11.5,fontWeight:700,fill:'#1c2024',textAnchor:'middle',fontFamily:'var(--mono)'},s.cable?s.cable.short:'kein Kabel'));
+      const sub=(s.len?s.len.toString().replace('.',',')+' m':'')+(s.uv?(s.len?' · ':'')+'→ UV '+s.uv.label:'');
+      if(sub)svg.appendChild(h('text',{x:x,y:TOP-18,fontSize:10,fill:'#6b7280',textAnchor:'middle',fontFamily:'var(--mono)'},sub));
+    });
+    if(!strangs.length)svg.appendChild(h('text',{x:LEFT+60,y:TOP+nF*BAND/2,fontSize:13,fill:'#9aa1a8',fontFamily:'var(--sans)'},'Noch keine Steigpunkte angelegt.'));
+    body.appendChild(h('div',{style:{overflowX:'auto',border:'1px solid #eef0f2',borderRadius:'10px',padding:'8px'}},svg));
+    body.appendChild(h('div',{style:{fontSize:'11px',color:'#9aa1a8',lineHeight:'1.55',marginTop:'12px',borderTop:'1px solid #eef0f2',paddingTop:'12px'}},'Senkrechte Linien = verknüpfte Steigstränge über mehrere Etagen (Pfeile zeigen die durchgehende Führung). Die Etagen-Reihenfolge entspricht der Etagenleiste – über ‹ › umsortieren. UV-Kästchen zeigen die Unterverteiler je Etage mit ihrer ungefähren Gesamt-Stromstärke.'));
+    sheet.appendChild(body);
+    const ov=this._sheetOverlay(sheet); ov.addEventListener('pointerdown',e=>{ if(e.target===ov)this.closeSection(); }); dom.verteilerHost.appendChild(ov);
+  },
+
+  /* ============== Symbol-Legende ============== */
+  openLegend(){ this.st.verteilerOpen=false; this.st.sectionOpen=false; this.st.legendOpen=true; this.renderLegend(); },
+  closeLegend(){ this.st.legendOpen=false; clear(dom.verteilerHost); },
+  renderLegend(){
+    clear(dom.verteilerHost); if(!this.st.legendOpen)return;
+    const proj=(this.st.projekte.find(p=>p.id===this.st.projektId)||{}).name||'Elektroplanung';
+    const today=new Date().toLocaleDateString('de-DE');
+    // Zählung über alle Etagen
+    const counts={}; this.st.floors.forEach(f=>f.elements.forEach(e=>{ counts[e.type]=(counts[e.type]||0)+1; }));
+    const usedCableIds=new Set(); this.st.floors.forEach(f=>{ f.cables.forEach(c=>usedCableIds.add(c.cableType)); f.elements.forEach(e=>{ if(e.riserCable)usedCableIds.add(e.riserCable); }); });
+    const sheet=h('div',{className:'v-sheet',style:{maxWidth:'940px',margin:'0 auto',background:'#fff',borderRadius:'12px',boxShadow:'0 18px 50px rgba(0,0,0,.3)',overflow:'hidden'}});
+    sheet.appendChild(h('div',{className:'v-noprint',style:{display:'flex',alignItems:'center',gap:'10px',padding:'13px 18px',borderBottom:'1px solid #e4e7ea',background:'#fbfcfc'}},
+      h('span',{style:{fontWeight:700,fontSize:'15px',flex:'1'}},'Symbol-Legende'),
+      h('label',{className:'v-noprint',style:{display:'flex',alignItems:'center',gap:'6px',fontSize:'12.5px',color:'#374151',cursor:'pointer'}},
+        (()=>{const cb=h('input',{type:'checkbox',style:{accentColor:'#374151',width:'15px',height:'15px'}});cb.checked=!!this.st.legendUsedOnly;cb.addEventListener('change',()=>{this.st.legendUsedOnly=cb.checked;this.renderLegend();});return cb;})(),
+        h('span',null,'Nur verwendete')),
+      h('button',{className:'tbtn',onClick:()=>this.printSheet()},'⎙ Drucken / PDF'),
+      h('button',{className:'tbtn primary',onClick:()=>this.closeLegend()},'Schließen')));
+    const body=h('div',{style:{padding:'24px 28px 30px'}});
+    body.appendChild(h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-end',borderBottom:'2px solid #1c2024',paddingBottom:'10px',marginBottom:'20px'}},
+      h('div',null,h('div',{style:{fontSize:'20px',fontWeight:700}},'Symbol-Legende'),h('div',{style:{fontSize:'13px',color:'#6b7280',marginTop:'2px'}},proj)),
+      h('div',{style:{textAlign:'right',fontSize:'11.5px',color:'#6b7280',fontFamily:'var(--mono)',lineHeight:'1.6'}},'Elektro-Installationsplan',h('br'),'Stand '+today)));
+    const usedOnly=!!this.st.legendUsedOnly;
+    const sym=(type)=>h('svg',{width:46,height:46,viewBox:'-23 -23 46 46',style:{flex:'none'}},h('g',null,symbolEls(type,'#1c2024',15)));
+    CATS.forEach(cat=>{
+      const keys=cat.keys.filter(k=>!usedOnly||counts[k]); if(!keys.length)return;
+      body.appendChild(h('div',{style:{fontSize:'11px',fontWeight:700,letterSpacing:'.05em',textTransform:'uppercase',color:'#9aa1a8',margin:'16px 0 8px'}},cat.name));
+      const grid=h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(210px,1fr))',gap:'8px'}});
+      keys.forEach(k=>{ const n=counts[k]||0;
+        grid.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'10px',padding:'7px 10px',border:'1px solid #e9ebee',borderRadius:'9px',background:n?'#fff':'#fbfcfc'}},
+          sym(k),
+          h('div',{style:{flex:'1',minWidth:0}},h('div',{style:{fontSize:'12.5px',fontWeight:600,color:'#1c2024',lineHeight:'1.25'}},TYPES[k].name),h('div',{style:{fontSize:'10.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},'Kürzel '+TYPES[k].prefix)),
+          h('span',{style:{fontSize:'13px',fontWeight:700,fontFamily:'var(--mono)',color:n?'#374151':'#cbd1d6',flex:'none'}},n?'×'+n:'–'))); });
+      body.appendChild(grid);
+    });
+    // Kabeltypen
+    const cableKeys=CABLE_TYPES.filter(ct=>!usedOnly||usedCableIds.has(ct.id));
+    if(cableKeys.length){
+      body.appendChild(h('div',{style:{fontSize:'11px',fontWeight:700,letterSpacing:'.05em',textTransform:'uppercase',color:'#9aa1a8',margin:'20px 0 8px'}},'Kabel- / Leitungstypen'));
+      const grid=h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:'8px'}});
+      cableKeys.forEach(ct=>{ const dbl=ct.id==='cat7x2';
+        const line=h('svg',{width:54,height:18,viewBox:'0 0 54 18',style:{flex:'none'}});
+        if(dbl)line.appendChild(h('line',{x1:2,y1:7,x2:52,y2:7,stroke:'#1c2024',strokeWidth:3,opacity:.3}));
+        line.appendChild(h('line',{x1:2,y1:dbl?11:9,x2:52,y2:dbl?11:9,stroke:'#1c2024',strokeWidth:2.4,strokeDasharray:ct.dash==='none'?null:ct.dash,strokeLinecap:'round'}));
+        grid.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'10px',padding:'7px 10px',border:'1px solid #e9ebee',borderRadius:'9px'}},
+          line,h('div',{style:{flex:'1'}},h('div',{style:{fontSize:'12.5px',fontWeight:600,color:'#1c2024'}},ct.name),h('div',{style:{fontSize:'10.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},ct.short)))); });
+      body.appendChild(grid);
+    }
+    body.appendChild(h('div',{style:{fontSize:'11px',color:'#9aa1a8',lineHeight:'1.55',marginTop:'18px',borderTop:'1px solid #eef0f2',paddingTop:'12px'}},'Symbolik in Anlehnung an DIN EN 60617 / DIN 18015-3 (vereinfachte Darstellung). Stückzahlen über alle Etagen des Projekts. Verbindliche Ausführung durch die Elektrofachkraft.'));
+    sheet.appendChild(body);
+    const ov=this._sheetOverlay(sheet); ov.addEventListener('pointerdown',e=>{ if(e.target===ov)this.closeLegend(); }); dom.verteilerHost.appendChild(ov);
+  },
+
+  /* ============== Rendering ============== */
+  renderTopbar(){ const f=this.fl(); $('#lblScale').textContent=f.scalePxPerM?('1 m ≈ '+Math.round(f.scalePxPerM)+' px'):'nicht gesetzt'; $('#lblZoom').textContent=Math.round(this.st.scale*100)+' %'; },
+  renderHint(){
+    const st=this.st; let txt='';
+    if(st.tool==='cable')txt=st.draft?'Klick = Knickpunkt · Klick auf ein Element verbindet & schließt ab · Doppelklick/Rechtsklick = frei beenden · Esc bricht ab':'Klicke (am besten auf ein Element), um den Kabelweg zu beginnen'+(st.ortho?' · rechtwinklig':'');
+    else if(st.tool==='room')txt=st.roomDraft?'Klick = Eckpunkt · zum Schließen den ersten Punkt anklicken oder Doppelklick/Rechtsklick · Esc bricht ab':'Klicke die Ecken des Raums nacheinander an'+(st.ortho?' · rechtwinklig':'');
+    else if(st.tool==='calibrate')txt=!st.calib?'Klicke den ersten Punkt einer bekannten Strecke':'Klicke den zweiten Punkt';
+    else if(TYPES[st.tool])txt='Klick platziert „'+TYPES[st.tool].name+'“ · weiter klicken für mehrere · V oder Esc beendet';
+    if(txt){ dom.hint.textContent=txt; dom.hint.style.display=''; } else dom.hint.style.display='none';
+  },
+
+  renderFloors(){
+    clear(dom.floorBar);
+    dom.floorBar.appendChild(h('span',{className:'lbl'},'ETAGEN'));
+    this.st.floors.forEach(fl=>{
+      const active=fl.id===this.st.activeFloor;
+      if(active){
+        const inp=h('input',{className:'fname',title:'Etage umbenennen'}); inp.value=fl.name;
+        inp.addEventListener('input',e=>this.renameFloor(fl.id,e.target.value));
+        inp.addEventListener('blur',()=>this.validateFloorName(fl.id));
+        inp.addEventListener('keydown',e=>{if(e.key==='Enter')inp.blur();});
+        inp.addEventListener('pointerdown',e=>e.stopPropagation());
+        const grp=h('div',{className:'fgrp'},inp);
+        const idx=this.st.floors.findIndex(x=>x.id===fl.id), last=this.st.floors.length-1;
+        if(this.st.floors.length>1){
+          const mk=(dir,glyph,t)=>{ const dis=(dir<0&&idx===0)||(dir>0&&idx===last); return h('button',{className:'iconbtn',title:t,style:{height:'30px',width:'20px',fontSize:'14px',opacity:dis?0.3:1,cursor:dis?'default':'pointer'},onClick:dis?null:()=>this.moveFloor(fl.id,dir)},glyph); };
+          grp.appendChild(mk(-1,'\u2039','Etage nach links'));
+          grp.appendChild(mk(1,'\u203a','Etage nach rechts'));
+          grp.appendChild(h('button',{className:'iconbtn',title:'Etage löschen',style:{height:'30px',width:'24px',fontSize:'15px'},onClick:()=>this.delFloor(fl.id)},'×'));
+        }
+        dom.floorBar.appendChild(grp);
+      } else {
+        dom.floorBar.appendChild(h('button',{className:'ftab',title:'Zu Etage wechseln',onClick:()=>this.switchFloor(fl.id)},fl.name||'Etage'));
+      }
+    });
+    dom.floorBar.appendChild(h('button',{className:'addf',title:'Etage hinzufügen',onClick:()=>this.addFloor()},'+'));
+  },
+
+  renderLeft(){
+    clear(dom.left);
+    const st=this.st;
+    const wrap=h('div',{style:{padding:'14px 12px 4px'}});
+    wrap.appendChild(h('div',{className:'sechead'},'WERKZEUGE'));
+    const tools=h('div',{style:{display:'flex',flexDirection:'column',gap:'2px'}});
+    [['select','Auswahl','V'],['pan','Verschieben','H'],['cable','Kabelweg','K'],['room','Raum','R'],['calibrate','Maßstab','M']].forEach(([id,label,key])=>tools.appendChild(this.toolRow(id,label,key)));
+    wrap.appendChild(tools); dom.left.appendChild(wrap);
+    const ortho=h('div',{style:{padding:'4px 12px'}},
+      h('label',{style:{display:'flex',alignItems:'center',gap:'9px',padding:'7px 8px',borderRadius:'7px',cursor:'pointer',fontSize:'13px',color:'#374151',background:st.ortho?'#f1f3f5':'transparent'}},
+        (()=>{const cb=h('input',{type:'checkbox',style:{accentColor:'#374151',width:'15px',height:'15px'}}); cb.checked=st.ortho; cb.addEventListener('change',()=>{this.st.ortho=!this.st.ortho;this.renderLeft();}); return cb;})(),
+        h('span',null,'Rechtwinklig (Ortho)')));
+    dom.left.appendChild(ortho);
+    const snap=h('div',{style:{padding:'0 12px 4px'}},
+      h('label',{style:{display:'flex',alignItems:'center',gap:'9px',padding:'7px 8px',borderRadius:'7px',cursor:'pointer',fontSize:'13px',color:'#374151',background:st.snap?'#f1f3f5':'transparent'}},
+        (()=>{const cb=h('input',{type:'checkbox',style:{accentColor:'#374151',width:'15px',height:'15px'}}); cb.checked=st.snap; cb.addEventListener('change',()=>{this.st.snap=!this.st.snap;this.renderLeft();}); return cb;})(),
+        h('span',{style:{flex:'1'}},'Raster-Fang'),
+        h('span',{style:{fontSize:'11px',color:'#9aa1a8',fontFamily:'var(--mono)'}},this.fl().scalePxPerM?(st.gridCm+' cm'):'20 px')));
+    dom.left.appendChild(snap);
+    const sf=h('div',{style:{padding:'2px 12px 4px'}}); sf.appendChild(h('div',{className:'sechead',style:{paddingTop:'8px'}},'STATUS-FILTER'));
+    const chips=h('div',{style:{display:'flex',flexWrap:'wrap',gap:'5px'}});
+    STATUS_OPTIONS.forEach(s=>{ const off=st.hideStatus.indexOf(s)>=0; const col=STATUS_COLOR[s];
+      chips.appendChild(h('button',{title:off?'Eingeblendet: nein – klicken zum Anzeigen':'Sichtbar – klicken zum Ausblenden',style:{display:'flex',alignItems:'center',gap:'5px',padding:'4px 8px',borderRadius:'6px',border:'1px solid '+(off?'#e4e7ea':col+'55'),background:off?'#f6f7f8':col+'14',cursor:'pointer',fontSize:'11.5px',fontWeight:600,color:off?'#b4bac0':'#374151',textDecoration:off?'line-through':'none'},onClick:()=>this.toggleStatusFilter(s)},
+        h('span',{style:{width:'8px',height:'8px',borderRadius:'50%',flex:'none',background:off?'#cbd1d6':col}}),s)); });
+    sf.appendChild(chips); dom.left.appendChild(sf);
+    const cbsel=h('select',{className:'sel'}); CABLE_TYPES.forEach(c=>cbsel.appendChild(h('option',{value:c.id},c.name))); cbsel.value=st.activeCableType; cbsel.addEventListener('change',e=>{this.st.activeCableType=e.target.value;this.persist();});
+    dom.left.appendChild(h('div',{style:{padding:'4px 12px 6px'}},h('div',{className:'sechead'},'AKTIVER KABELTYP'),cbsel));
+    const place=h('div',{style:{padding:'10px 12px 8px'}}); place.appendChild(h('div',{className:'sechead'},'PLATZIEREN'));
+    const search=h('input',{className:'inp',type:'search',placeholder:'Symbol suchen…',style:{marginBottom:'10px'}}); search.value=this.st.placeQuery||'';
+    search.addEventListener('input',e=>{ this.st.placeQuery=e.target.value; this.fillPlaceGroups(); });
+    place.appendChild(search);
+    const groups=h('div',{style:{display:'flex',flexDirection:'column',gap:'10px'}});
+    this._placeGroups=groups; this.fillPlaceGroups();
+    place.appendChild(groups); dom.left.appendChild(place);
+    dom.left.appendChild(h('div',{style:{flex:'1'}}));
+    const c=this.circ(st.activeCircuit)||{name:'—',color:'#888'};
+    dom.left.appendChild(h('div',{style:{padding:'10px 14px 14px',borderTop:'1px solid #eef0f2',marginTop:'8px'}},
+      h('div',{style:{fontSize:'11px',lineHeight:'1.55',color:'#9aa1a8'}},'Aktiver Stromkreis',h('br'),
+        h('span',{style:{display:'inline-flex',alignItems:'center',gap:'7px',marginTop:'5px',fontSize:'13px',color:'#374151',fontWeight:500}},h('span',{style:{width:'11px',height:'11px',borderRadius:'3px',background:c.color}}),c.name))));
+  },
+  fillPlaceGroups(){
+    const groups=this._placeGroups; if(!groups)return; clear(groups);
+    const q=(this.st.placeQuery||'').trim().toLowerCase(); let any=false;
+    CATS.forEach(cat=>{ const keys=cat.keys.filter(k=>!q||TYPES[k].name.toLowerCase().includes(q)||k.toLowerCase().includes(q)); if(!keys.length)return; any=true;
+      const g=h('div',null,h('div',{style:{fontSize:'10.5px',fontWeight:600,color:'#b4bac0',padding:'0 6px 4px'}},cat.name));
+      const list=h('div',{style:{display:'flex',flexDirection:'column',gap:'2px'}}); keys.forEach(k=>list.appendChild(this.toolRow(k,TYPES[k].name,''))); g.appendChild(list); groups.appendChild(g); });
+    if(!any)groups.appendChild(h('div',{style:{fontSize:'12px',color:'#9aa1a8',padding:'6px'}},'Kein Symbol gefunden.'));
+  },
+  toolRow(id,label,key){
+    const active=this.st.tool===id;
+    const isNav=id==='select'||id==='pan'||id==='cable'||id==='calibrate'||id==='room';
+    const row=h('div',{className:'toolrow'+(active?' active':''),title:label,onClick:()=>this.setTool(id)});
+    if(active){ row.style.color='#2563eb'; row.style.boxShadow='inset 2.5px 0 0 #2563eb'; }
+    row.appendChild(h('span',{className:'ic'},makeIcon(id,isNav?'#4b5560':this.circColor(this.st.activeCircuit))));
+    row.appendChild(h('span',{style:{flex:'1'}},label));
+    if(key)row.appendChild(h('span',{className:'key'},key));
+    return row;
+  },
+
+  renderScene(){
+    const f=this.fl();
+    dom.overlay.setAttribute('viewBox','0 0 '+f.planW+' '+f.planH);
+    dom.overlay.setAttribute('width',f.planW); dom.overlay.setAttribute('height',f.planH);
+    dom.img.style.width=f.planW+'px'; dom.img.style.height=f.planH+'px'; dom.img.style.opacity=f.planOpacity;
+    clear(dom.overlay);
+    this.buildRooms().forEach(n=>dom.overlay.appendChild(n));
+    this.buildCables().forEach(n=>dom.overlay.appendChild(n));
+    this.buildElements().forEach(n=>dom.overlay.appendChild(n));
+    const dr=this.buildDraft(); if(dr)dom.overlay.appendChild(dr);
+    const mq=this.buildMarquee(); if(mq)dom.overlay.appendChild(mq);
+    const rd=this.buildRoomDraft(); if(rd)dom.overlay.appendChild(rd);
+    const cl=this.buildCalib(); if(cl)dom.overlay.appendChild(cl);
+    this.applyTransform(); this.updateCursor();
+  },
+  buildMarquee(){ const m=this.st.marquee; if(!m)return null; const x=Math.min(m.x0,m.x1),y=Math.min(m.y0,m.y1),w=Math.abs(m.x1-m.x0),hh=Math.abs(m.y1-m.y0); if(w<1&&hh<1)return null; return h('rect',{x,y,width:w,height:hh,fill:'rgba(37,99,235,.08)',stroke:'#2563eb',strokeWidth:1.5,strokeDasharray:'6 4',style:{pointerEvents:'none'}}); },
+  buildRooms(){
+    const sel=this.st.selected, f=this.fl();
+    return f.rooms.map(r=>{
+      if(!r.points||r.points.length<3)return null;
+      const rt=ROOM_TYPES[r.type]||ROOM_TYPES.sonstiges, color=rt.color, isSel=sel&&sel.kind==='room'&&sel.id===r.id;
+      const pts=r.points.map(p=>p.x+','+p.y).join(' ');
+      const c=this.polyCentroid(r.points); const a=this.roomAreaM2(r);
+      const g=h('g',{style:{cursor:this.st.tool==='select'?'pointer':'crosshair',pointerEvents:'auto'},onPointerDown:e=>this.onRoomDown(r.id,e)});
+      g.appendChild(h('polygon',{points:pts,fill:color,fillOpacity:isSel?0.16:0.09,stroke:color,strokeWidth:isSel?3:2,strokeOpacity:isSel?0.95:0.55,strokeLinejoin:'round',strokeDasharray:isSel?'none':'1 0'}));
+      g.appendChild(h('text',{x:c.x,y:c.y-(a?9:0),fontSize:19,fontWeight:700,fill:color,textAnchor:'middle',dominantBaseline:'central',fontFamily:'var(--sans)',style:{paintOrder:'stroke',stroke:'#fff',strokeWidth:'4',strokeLinejoin:'round'}},r.name||rt.name));
+      if(a)g.appendChild(h('text',{x:c.x,y:c.y+13,fontSize:14,fontWeight:600,fill:color,textAnchor:'middle',dominantBaseline:'central',fontFamily:'var(--mono)',opacity:.85,style:{paintOrder:'stroke',stroke:'#fff',strokeWidth:'3.5',strokeLinejoin:'round'}},a.toFixed(1)+' m²'));
+      if(isSel)r.points.forEach((p,i)=>g.appendChild(h('rect',{x:p.x-6,y:p.y-6,width:12,height:12,rx:2,fill:'#fff',stroke:color,strokeWidth:1.8,style:{cursor:'grab'},onPointerDown:e=>this.onRoomVertDown(r.id,i,e)})));
+      return g;
+    }).filter(Boolean);
+  },
+  buildRoomDraft(){
+    const d=this.st.roomDraft; if(!d)return null;
+    let pts=d.points.slice();
+    if(this.st.mouse){ let m={x:this.st.mouse.x,y:this.st.mouse.y}; if(this.st.ortho&&pts.length){const l=pts[pts.length-1];if(Math.abs(m.x-l.x)>Math.abs(m.y-l.y))m.y=l.y;else m.x=l.x;} pts=pts.concat([m]); }
+    const color='#0f766e';
+    const g=h('g',null);
+    if(pts.length>=2)g.appendChild(h('polygon',{points:pts.map(p=>p.x+','+p.y).join(' '),fill:color,fillOpacity:.08,stroke:color,strokeWidth:2.5,strokeLinejoin:'round',strokeDasharray:'10 7'}));
+    d.points.forEach((p,i)=>g.appendChild(h('circle',{cx:p.x,cy:p.y,r:i===0?7:5,fill:i===0?color:'#fff',stroke:color,strokeWidth:2.5})));
+    return g;
+  },
+  buildElements(){
+    return this.fl().elements.filter(el=>!this.isHidden(el.circuit)&&!this.statusHidden(el)).map(el=>{
+      const color=this.circColor(el.circuit), isSel=this.isElSel(el.id);
+      const g=h('g',{transform:`translate(${el.x} ${el.y})`,style:{cursor:this.st.tool==='select'?'move':'crosshair',pointerEvents:'auto'},onPointerDown:e=>this.onElDown(el.id,e),onContextMenu:e=>this.onElCtx(el.id,e)});
+      if(isSel)g.appendChild(h('circle',{cx:0,cy:0,r:R+9,fill:'rgba(37,99,235,.08)',stroke:'#1c2024',strokeWidth:1.4,strokeDasharray:'5 4'}));
+      g.appendChild(h('g',{transform:`rotate(${el.rot||0})`},symbolEls(el.type,color,R,{gang:el.gang,tasten:el.tasten})));
+      if(el.type==='durchfuehrung'&&el.riserLink&&this.riserPartner(el)){ g.appendChild(h('g',{transform:`translate(${R+1} ${-R-1})`,style:{pointerEvents:'none'}},h('circle',{cx:0,cy:0,r:8.5,fill:'#2563eb',stroke:'#fff',strokeWidth:1.5}),h('text',{x:0,y:0.5,fontSize:12,fontWeight:700,fill:'#fff',textAnchor:'middle',dominantBaseline:'central',fontFamily:'var(--sans)'},'\u2195'))); }
+      g.appendChild(h('text',{x:0,y:R+19,fontSize:15,fontWeight:600,fill:color,textAnchor:'middle',fontFamily:'var(--mono)',style:{paintOrder:'stroke',stroke:'#fff',strokeWidth:'3.5',strokeLinejoin:'round'}},el.label));
+      if(el.type==='durchfuehrung'){ const rp=el.riserLink?this.riserPartner(el):null; const ctd=CABLE_BY_ID[el.riserCable]; let sub=''; if(rp)sub='\u2195 '+rp.floor.name; if(ctd)sub+=(sub?' \u00b7 ':'')+ctd.short; if(sub)g.appendChild(h('text',{x:0,y:R+34,fontSize:12,fontWeight:600,fill:'#2563eb',textAnchor:'middle',fontFamily:'var(--mono)',style:{paintOrder:'stroke',stroke:'#fff',strokeWidth:'3.5',strokeLinejoin:'round'}},sub)); }
+      return g;
+    });
+  },
+  buildCables(){
+    const sel=this.st.selected;
+    return this.fl().cables.filter(c=>!this.isHidden(c.circuit)).map(cab=>{
+      const color=this.circColor(cab.circuit), isSel=sel&&sel.kind==='cable'&&sel.id===cab.id;
+      const ct=CABLE_BY_ID[cab.cableType]; const dash=cab.dashed?'14 10':(ct?ct.dash:'none'); const dbl=cab.cableType==='cat7x2';
+      const pts=cab.points.map(p=>p.x+','+p.y).join(' ');
+      const len=this.fmtLen(this.cableLenPx(cab.points)); const tag=(ct?ct.short:'')+(len?(ct?'  ·  ':'')+len:'');
+      const mid=cab.points[Math.floor((cab.points.length-1)/2)], mid2=cab.points[Math.ceil((cab.points.length-1)/2)];
+      const lx=(mid.x+mid2.x)/2, ly=(mid.y+mid2.y)/2;
+      const g=h('g',{style:{cursor:'pointer',pointerEvents:'auto'},onPointerDown:e=>this.onCableDown(cab.id,e)});
+      g.appendChild(h('polyline',{points:pts,fill:'none',stroke:'transparent',strokeWidth:20,strokeLinejoin:'round',strokeLinecap:'round'}));
+      if(dbl)g.appendChild(h('polyline',{points:pts,fill:'none',stroke:color,strokeWidth:isSel?9:7,strokeLinejoin:'round',strokeLinecap:'round',opacity:.32}));
+      g.appendChild(h('polyline',{points:pts,fill:'none',stroke:color,strokeWidth:isSel?6:4.5,strokeLinejoin:'round',strokeLinecap:'round',strokeDasharray:dash}));
+      [[cab.points[0],cab.fromEl],[cab.points[cab.points.length-1],cab.toEl]].forEach(([p,ref])=>{ if(ref)g.appendChild(h('circle',{cx:p.x,cy:p.y,r:4.5,fill:color,stroke:'#fff',strokeWidth:2})); });
+      if(tag)g.appendChild(h('text',{x:lx,y:ly-9,fontSize:14,fontWeight:600,fill:color,textAnchor:'middle',fontFamily:'var(--mono)',style:{paintOrder:'stroke',stroke:'#fff',strokeWidth:'3.5',strokeLinejoin:'round'}},tag));
+      if(isSel)cab.points.forEach((p,i)=>g.appendChild(h('rect',{x:p.x-6,y:p.y-6,width:12,height:12,rx:2,fill:'#fff',stroke:'#1c2024',strokeWidth:1.6,style:{cursor:'grab'},onPointerDown:e=>this.onVertDown(cab.id,i,e)})));
+      return g;
+    });
+  },
+  buildDraft(){
+    const d=this.st.draft; if(!d)return null;
+    const color=this.circColor(this.st.activeCircuit), ctd=CABLE_BY_ID[this.st.activeCableType];
+    let pts=d.points.slice();
+    if(this.st.mouse){ let m={x:this.st.mouse.x,y:this.st.mouse.y}; const near=this.nearestEl(m,d.fromEl); if(near){m={x:near.x,y:near.y};} else if(this.st.ortho&&pts.length){const l=pts[pts.length-1];if(Math.abs(m.x-l.x)>Math.abs(m.y-l.y))m.y=l.y;else m.x=l.x;} pts=pts.concat([m]); }
+    const g=h('g',null);
+    g.appendChild(h('polyline',{points:pts.map(p=>p.x+','+p.y).join(' '),fill:'none',stroke:color,strokeWidth:4.5,strokeLinejoin:'round',strokeLinecap:'round',strokeDasharray:(ctd&&ctd.dash!=='none')?ctd.dash:'10 8',opacity:.85}));
+    d.points.forEach(p=>g.appendChild(h('circle',{cx:p.x,cy:p.y,r:5,fill:'#fff',stroke:color,strokeWidth:2.5})));
+    if(this.fl().scalePxPerM&&pts.length>=2){ const last=pts[pts.length-1]; g.appendChild(h('text',{x:last.x+12,y:last.y-12,fontSize:14,fontWeight:600,fill:color,fontFamily:'var(--mono)',style:{paintOrder:'stroke',stroke:'#fff',strokeWidth:'3.5',strokeLinejoin:'round'}},this.fmtLen(this.cableLenPx(pts)))); }
+    return g;
+  },
+  buildCalib(){
+    const c=this.st.calib; if(!c)return null;
+    const p2=c.p2||(this.st.mouse?{x:this.st.mouse.x,y:this.st.mouse.y}:c.p1);
+    return h('g',null,
+      h('line',{x1:c.p1.x,y1:c.p1.y,x2:p2.x,y2:p2.y,stroke:'#e11d48',strokeWidth:3,strokeDasharray:'8 6'}),
+      h('circle',{cx:c.p1.x,cy:c.p1.y,r:6,fill:'#fff',stroke:'#e11d48',strokeWidth:2.5}),
+      h('circle',{cx:p2.x,cy:p2.y,r:6,fill:'#fff',stroke:'#e11d48',strokeWidth:2.5}));
+  },
+
+  renderCalib(){
+    clear(dom.calibHost);
+    if(!this.st.showCalib)return;
+    const inp=h('input',{type:'number',step:'0.01',className:'inp',style:{flex:'1',fontFamily:'var(--mono)'}}); inp.value=this.st.calibMeters; inp.addEventListener('input',e=>this.st.calibMeters=e.target.value);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')this.confirmCalib();if(e.key==='Escape')this.cancelCalib();});
+    dom.calibHost.appendChild(h('div',{className:'modal-bg'},
+      h('div',{className:'modal'},
+        h('div',{style:{fontWeight:700,fontSize:'15px',marginBottom:'4px'}},'Maßstab festlegen'),
+        h('div',{style:{fontSize:'12.5px',color:'#6b7280',lineHeight:'1.5',marginBottom:'16px'}},'Wie lang ist die gemessene Strecke in der Realität?'),
+        h('div',{style:{display:'flex',alignItems:'center',gap:'9px'}},inp,h('span',{style:{fontSize:'14px',color:'#6b7280',fontWeight:500}},'m')),
+        h('div',{style:{display:'flex',gap:'8px',marginTop:'18px'}},
+          h('button',{className:'tbtn',style:{flex:'1',height:'38px',justifyContent:'center'},onClick:()=>this.cancelCalib()},'Abbrechen'),
+          h('button',{className:'tbtn primary',style:{flex:'1',height:'38px',justifyContent:'center'},onClick:()=>this.confirmCalib()},'Übernehmen'))
+      )));
+    setTimeout(()=>inp.focus(),30);
+  },
+
+  renderRight(){
+    clear(dom.rightBody);
+    if(this.st.rightTab==='props')this.renderProps(); else if(this.st.rightTab==='check')this.renderCheck(); else this.renderList();
+    $('#tabProps').classList.toggle('active',this.st.rightTab==='props');
+    $('#tabList').classList.toggle('active',this.st.rightTab==='list');
+    $('#tabCheck').classList.toggle('active',this.st.rightTab==='check');
+    this.updateCheckBadge();
+  },
+  updateCheckBadge(){ const b=$('#checkBadge'); if(!b)return; let nErr=0; try{ nErr=this.runChecks().filter(x=>x.sev==='error').length; }catch(e){} if(nErr){ b.textContent=nErr; b.style.display=''; } else b.style.display='none'; },
+  focusCheck(t){ if(!t)return; if(t.kind==='circuit'){ this.setActiveCircuit(t.id); const c=this.circ(t.id); if(c&&c.hidden)this.toggleHide(t.id); this.toast('Stromkreis: '+(c?c.name:'')); return; } this.st.selected={kind:t.kind,id:t.id}; this.st.selEls=t.kind==='element'?[t.id]:[]; const f=this.fl(); const ent=t.kind==='room'?f.rooms.find(r=>r.id===t.id):f.elements.find(e=>e.id===t.id); if(ent&&t.kind==='element'){ const c=this.circ(ent.circuit); if(c&&c.hidden)this.toggleHide(c.id); } this.renderScene(); this.renderCircuits(); this.renderLeft(); },
+  renderCheck(){
+    const wrap=h('div',{style:{padding:'14px 16px'}});
+    const all=this.runChecks();
+    const nE=all.filter(x=>x.sev==='error').length, nW=all.filter(x=>x.sev==='warn').length, nT=all.filter(x=>x.sev==='tip').length;
+    wrap.appendChild(h('div',{style:{fontSize:'10.5px',fontWeight:700,letterSpacing:'.06em',color:'#9aa1a8',marginBottom:'8px'}},'PRÜFUNG · ETAGE '+this.fl().name.toUpperCase()));
+    wrap.appendChild(h('div',{style:{display:'flex',gap:'8px',marginBottom:'16px'}},
+      h('div',{className:'stat',style:{background:nE?'#fdf3f3':'#f6f7f8'}},h('div',{className:'k',style:{color:nE?'#c0322a':'#9aa1a8'}},'Fehler'),h('div',{className:'v',style:{color:nE?'#c0322a':'#1c2024'}},nE)),
+      h('div',{className:'stat',style:{background:nW?'#fcf6ec':'#f6f7f8'}},h('div',{className:'k',style:{color:nW?'#b46b09':'#9aa1a8'}},'Hinweise'),h('div',{className:'v',style:{color:nW?'#b46b09':'#1c2024'}},nW)),
+      h('div',{className:'stat'},h('div',{className:'k'},'Tipps'),h('div',{className:'v'},nT))));
+    if(!all.length){ wrap.appendChild(h('div',{style:{padding:'24px 8px',textAlign:'center',fontSize:'13.5px',color:'#16a34a',fontWeight:600}},'✓ Keine Beanstandungen auf dieser Etage.')); wrap.appendChild(h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',lineHeight:'1.5',marginTop:'8px',textAlign:'center'}},'Geprüft werden Last/Sicherung, RCD-Pflicht, Steckdosen je Kreis, Großverbraucher, Rauchmelder und die Mindestausstattung je Raum.')); dom.rightBody.appendChild(wrap); return; }
+    const palette={error:{c:'#c0322a',bg:'#fdf3f3',ic:'✕',lbl:'Fehler'},warn:{c:'#b46b09',bg:'#fcf6ec',ic:'!',lbl:'Hinweis'},tip:{c:'#2563eb',bg:'#eef3fb',ic:'i',lbl:'Tipp'}};
+    const list=h('div',{style:{display:'flex',flexDirection:'column',gap:'7px'}});
+    all.forEach(x=>{ const p=palette[x.sev];
+      const card=h('div',{style:{display:'flex',gap:'10px',padding:'10px 11px',borderRadius:'9px',background:p.bg,cursor:x.target?'pointer':'default'}});
+      card.appendChild(h('span',{style:{width:'18px',height:'18px',borderRadius:'50%',background:p.c,color:'#fff',fontSize:'12px',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flex:'none',fontFamily:'var(--mono)',marginTop:'1px'}},p.ic));
+      const body=h('div',{style:{flex:'1',minWidth:'0'}});
+      body.appendChild(h('div',{style:{fontSize:'10px',fontWeight:700,letterSpacing:'.05em',textTransform:'uppercase',color:p.c,marginBottom:'2px'}},x.cat));
+      body.appendChild(h('div',{style:{fontSize:'12.5px',lineHeight:'1.45',color:'#1c2024'}},x.text));
+      card.appendChild(body);
+      if(x.target){ card.addEventListener('click',()=>this.focusCheck(x.target)); card.appendChild(h('span',{style:{color:p.c,fontSize:'14px',alignSelf:'center',flex:'none'}},'›')); }
+      list.appendChild(card);
+    });
+    wrap.appendChild(list);
+    dom.rightBody.appendChild(wrap);
+  },
+  field(label,inputEl){ return h('div',{style:{marginBottom:'12px'}},h('label',{className:'field-label'},label),inputEl); },
+  _groupPanel(wrap,f){
+    const els=this.groupEls(), n=els.length;
+    wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}},
+      h('span',{style:{width:'34px',height:'34px',borderRadius:'8px',background:'#eef2ff',color:'#2563eb',display:'flex',alignItems:'center',justifyContent:'center',flex:'none',fontWeight:700,fontFamily:'var(--mono)'}},String(n)),
+      h('div',null,h('div',{style:{fontSize:'14px',fontWeight:600}},n+' Elemente'),h('div',{style:{fontSize:'11.5px',color:'#9aa1a8'}},'Mehrfachauswahl'))));
+    const byType={}; els.forEach(e=>{const t=(TYPES[e.type]||{name:e.type}).name; byType[t]=(byType[t]||0)+1;});
+    const chips=h('div',{style:{display:'flex',flexWrap:'wrap',gap:'5px',marginBottom:'16px'}});
+    Object.keys(byType).forEach(t=>chips.appendChild(h('span',{style:{fontSize:'11px',fontWeight:600,color:'#374151',background:'#f1f3f5',borderRadius:'5px',padding:'3px 7px'}},byType[t]+'\u00d7 '+t)));
+    wrap.appendChild(chips);
+    const csel=h('select',{className:'sel'}); csel.appendChild(h('option',{value:''},'\u2014 Stromkreis zuweisen \u2014')); this.st.circuits.forEach(c=>csel.appendChild(h('option',{value:c.id},c.name))); csel.value=''; csel.addEventListener('change',e=>{ if(e.target.value)this.assignAll('circuit',e.target.value); });
+    wrap.appendChild(this.field('Stromkreis (alle)',csel));
+    const ssel=h('select',{className:'sel'}); ssel.appendChild(h('option',{value:''},'\u2014 Status zuweisen \u2014')); STATUS_OPTIONS.forEach(o=>ssel.appendChild(h('option',{value:o},o))); ssel.value=''; ssel.addEventListener('change',e=>{ if(e.target.value)this.assignAll('status',e.target.value); });
+    wrap.appendChild(this.field('Status (alle)',ssel));
+    const els2=this.groupEls();
+    if(els2.some(e=>WALL_TYPES.has(e.type))){ const hi=h('input',{className:'inp',inputmode:'decimal',style:{fontFamily:'var(--mono)'},placeholder:'z. B. 30'}); hi.addEventListener('change',e=>{ if(e.target.value!=='')this.assignAll('height',e.target.value); }); wrap.appendChild(this.field('Montagehöhe (cm) – alle',hi)); }
+    if(els2.length&&els2.every(e=>e.type==='durchfuehrung')){ const rc=h('select',{className:'sel'}); rc.appendChild(h('option',{value:''},'\u2014 Steig-Kabeltyp zuweisen \u2014')); CABLE_TYPES.forEach(ct=>rc.appendChild(h('option',{value:ct.id},ct.name))); rc.addEventListener('change',e=>{ if(e.target.value)this.assignAllRiser('riserCable',e.target.value); }); wrap.appendChild(this.field('Kabeltyp Steigleitung (alle)',rc)); }
+    const nt=h('textarea',{className:'inp',rows:2,style:{resize:'vertical'},placeholder:'Notiz für alle gewählten…'}); nt.addEventListener('change',e=>{ this.assignAll('note',e.target.value); }); wrap.appendChild(this.field('Notiz (alle)',nt));
+    wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}},
+      h('span',{style:{fontSize:'12px',color:'#6b7280',flex:'1'}},'Alle drehen'),
+      h('button',{className:'tbtn',style:{width:'34px',padding:'0',justifyContent:'center',height:'32px'},onClick:()=>this.rotAll(-45)},'\u27f2'),
+      h('button',{className:'tbtn',style:{width:'34px',padding:'0',justifyContent:'center',height:'32px'},onClick:()=>this.rotAll(45)},'\u27f3')));
+    wrap.appendChild(h('div',{style:{display:'flex',gap:'8px'}},
+      h('button',{className:'tbtn',style:{flex:'1',justifyContent:'center'},onClick:()=>this.duplicateSel()},'Duplizieren'),
+      h('button',{className:'tbtn',style:{justifyContent:'center',color:'#c0322a',borderColor:'#f0c9c9',background:'#fdf3f3'},onClick:()=>this.deleteSelected()},'L\u00f6schen')));
+    wrap.appendChild(h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',lineHeight:'1.5',marginTop:'12px'}},'Shift-Klick f\u00fcgt Elemente hinzu/entfernt sie \u00b7 Rahmen aufziehen w\u00e4hlt mehrere \u00b7 Strg/Cmd+C/V kopiert, Strg/Cmd+D dupliziert.'));
+  },
+  allUVs(){ const out=[]; this.st.floors.forEach(f=>f.elements.forEach(e=>{ if(e.type==='unterverteiler')out.push({id:e.id,label:e.label,floor:f.name}); })); return out; },
+  circuitsForUv(uvId){ return this.st.circuits.filter(c=>(c.uv||'')===(uvId||'')); },
+  allRisers(){ const out=[]; this.st.floors.forEach(f=>f.elements.forEach(e=>{ if(e.type==='durchfuehrung')out.push({id:e.id,label:e.label,floorId:f.id,floorName:f.name}); })); return out; },
+  findRiser(id){ if(!id)return null; for(const f of this.st.floors){ const e=f.elements.find(x=>x.id===id&&x.type==='durchfuehrung'); if(e)return {el:e,floor:f}; } return null; },
+  riserPartner(el){ return el&&el.riserLink?this.findRiser(el.riserLink):null; },
+  setRiserLink(el,partnerId){ this.pushUndo();
+    const old=this.findRiser(el.riserLink); if(old&&old.el.riserLink===el.id)old.el.riserLink='';
+    if(partnerId){ const np=this.findRiser(partnerId);
+      if(np){ const npOld=this.findRiser(np.el.riserLink); if(npOld&&npOld.el.id!==el.id&&npOld.el.riserLink===np.el.id)npOld.el.riserLink='';
+        el.riserLink=partnerId; np.el.riserLink=el.id;
+        const len=el.riserLen||np.el.riserLen||''; el.riserLen=len; np.el.riserLen=len; }
+    } else { el.riserLink=''; }
+    this.renderRight(); this.renderScene(); this.persist();
+  },
+  setRiserLen(el,val){ el.riserLen=val; const p=this.riserPartner(el); if(p)p.el.riserLen=val; this.persist(); },
+  setRiserField(el,field,val){ el[field]=val; const p=this.riserPartner(el); if(p)p.el[field]=val; this.renderRight(); this.renderScene(); this.persist(); },
+  uvInfo(id){ if(!id)return null; for(const f of this.st.floors){ const u=f.elements.find(e=>e.id===id&&e.type==='unterverteiler'); if(u)return {label:u.label,floor:f.name}; } return null; },
+  circuitRisers(c){ const out=[]; const seen=new Set(); this.st.floors.forEach(f=>f.cables.forEach(cab=>{ if(cab.circuit!==c.id)return; [cab.fromEl,cab.toEl].forEach(id=>{ if(!id)return; const el=f.elements.find(e=>e.id===id); if(el&&el.type==='durchfuehrung'){ const key=el.riserLink?[el.id,el.riserLink].sort().join('|'):el.id; if(seen.has(key))return; seen.add(key); const p=el.riserLink?this.findRiser(el.riserLink):null; const uv=el.riserUv?this.uvInfo(el.riserUv):null; const ct=CABLE_BY_ID[el.riserCable]; out.push({label:el.label,fromFloor:f.name,toFloor:p?p.floor.name:(uv?uv.floor:''),cable:ct?ct.short:''}); } }); })); return out; },
+  jumpToRiser(p){ if(!p)return; if(p.floor.id!==this.st.activeFloor)this.switchFloor(p.floor.id); this.selectEl(p.el.id,false); this.st.rightTab='props'; this.allRender(); },
+  /* ---- Status-Filter ---- */
+  statusHidden(el){ const h=this.st.hideStatus; return h&&h.length&&h.indexOf(el.status||'Geplant')>=0; },
+  toggleStatusFilter(s){ const h=this.st.hideStatus; const i=h.indexOf(s); if(i>=0)h.splice(i,1); else h.push(s); this.renderScene(); this.renderLeft(); },
+  /* ---- Spannungsfall (VDE 0100-520) ---- */
+  RHO:0.01786, // Kupfer Ω·mm²/m bei Betriebstemperatur (Richtwert)
+  mm2Num(c){ const brk=this.circBreaker(c); const v=(c.mm2||brk.mm2||'1,5').toString().replace(',','.'); const n=parseFloat(v); return n>0?n:1.5; },
+  circCurrent(c){ const agg=this.circAggregate(c); const brk=this.circBreaker(c); const threeph=brk.phasen===3; return threeph?agg.sumW/(Math.sqrt(3)*400):agg.sumW/230; },
+  circVoltDrop(c){ const I=this.circCurrent(c); const L=this.circuitCableLenM(c); const A=this.mm2Num(c); const brk=this.circBreaker(c); const threeph=brk.phasen===3;
+    if(!I||!L)return {pct:0,volt:0,L,I,A,threeph};
+    const dU=threeph ? (Math.sqrt(3)*this.RHO*L*I)/A : (2*this.RHO*L*I)/A;
+    const base=threeph?400:230; return {pct:dU/base*100,volt:dU,L,I,A,threeph}; },
+  /* ---- UV-Bilanz / Zuleitung ---- */
+  uvSupplyRisers(uvId){ // Steigpunkte, die zu diesem UV führen (Zuleitung)
+    const out=[]; const seen=new Set();
+    this.st.floors.forEach(f=>f.elements.forEach(e=>{ if(e.type!=='durchfuehrung'||e.riserUv!==uvId)return; const key=e.riserLink?[e.id,e.riserLink].sort().join('|'):e.id; if(seen.has(key))return; seen.add(key);
+      out.push({label:e.label,floor:f.name,cable:CABLE_BY_ID[e.riserCable],len:parseFloat((e.riserLen||'').toString().replace(',','.'))||0}); }));
+    return out; },
+  uvTotals(uvId){ const cs=this.circuitsForUv(uvId); const sumW=cs.reduce((s,c)=>s+this.circAggregate(c).sumW,0); const A=sumW/230; return {nCirc:cs.length,sumW,ampere:A}; },
+  cableMm2(ct){ if(!ct)return 0; const m=(ct.short||'').match(/(\d+(?:[.,]\d+)?)\s*$/); return m?parseFloat(m[1].replace(',','.')):0; },
+  cableAmp(mm2){ const T={1.5:16,2.5:20,4:25,6:34,10:46,16:61}; let best=0; Object.keys(T).forEach(k=>{ if(parseFloat(k)<=mm2+1e-6)best=T[k]; }); return best; },
+  /* ---- Etagen umsortieren ---- */
+  moveFloor(id,dir){ const a=this.st.floors; const i=a.findIndex(f=>f.id===id); if(i<0)return; const j=i+dir; if(j<0||j>=a.length)return; this.pushUndo(); const t=a[i]; a[i]=a[j]; a[j]=t; this.renderFloors(); this.persist(); if(this.st.sectionOpen)this.renderSection(); },
+  _verteilerElPanel(wrap,el,f){
+    const isUV=el.type==='unterverteiler';
+    wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}},
+      h('span',{style:{width:'34px',height:'34px',borderRadius:'8px',background:'#f1f3f5',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},makeIcon(el.type,this.circColor(el.circuit))),
+      h('div',null,h('div',{style:{fontSize:'14px',fontWeight:600}},(TYPES[el.type]||{name:el.type}).name),h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},'x '+el.x+'  ·  y '+el.y))));
+    const inp=(val,fl,ph)=>{const i=h('input',{className:'inp',placeholder:ph||''});i.value=val||'';i.addEventListener('input',e=>this.editEl(fl,e.target.value));return i;};
+    wrap.appendChild(this.field('Bezeichnung / Nummer',inp(el.label,'label')));
+    if(isUV){
+      const cs=this.circuitsForUv(el.id);
+      const load=cs.reduce((s,c)=>s+this.circAggregate(c).sumW,0);
+      const rcdN=cs.filter(c=>this.circHasRcd(c)).length; const fis=Math.ceil(rcdN/6);
+      wrap.appendChild(h('div',{style:{display:'flex',gap:'8px',marginBottom:'14px'}},
+        h('div',{className:'stat'},h('div',{className:'k'},'Stromkreise'),h('div',{className:'v'},cs.length)),
+        h('div',{className:'stat'},h('div',{className:'k'},'Last'),h('div',{className:'v'},load+' W')),
+        h('div',{className:'stat'},h('div',{className:'k'},'FI/RCD'),h('div',{className:'v'},fis))));
+      const cb=h('div',{style:{marginBottom:'14px'}}); cb.appendChild(h('label',{className:'field-label'},'Zugeordnete Stromkreise ('+cs.length+')'));
+      if(cs.length){ cs.forEach(c=>{ const ag=this.circAggregate(c); cb.appendChild(h('div',{className:'row',style:{padding:'6px 9px',marginBottom:'4px'}},h('span',{className:'dot',style:{background:c.color,width:'9px',height:'9px'}}),h('span',{style:{flex:'1',fontSize:'12.5px'}},c.name),h('span',{style:{fontSize:'11.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},this.fmtLen2(this.circuitCableLenM(c))))); }); }
+      else cb.appendChild(h('div',{style:{fontSize:'12px',color:'#9aa1a8',lineHeight:'1.5'}},'Noch keine Stromkreise zugeordnet. Zuordnung im Stromkreis (links) oder im Verteilerplan.'));
+      wrap.appendChild(cb);
+      const sup=this.uvSupplyRisers(el.id); const tot=this.uvTotals(el.id);
+      const zb=h('div',{style:{marginBottom:'14px'}}); zb.appendChild(h('label',{className:'field-label'},'Zuleitung (Steigleitung)'));
+      if(sup.length){ sup.forEach(s=>{ const mm2=this.cableMm2(s.cable), cap=this.cableAmp(mm2), over=cap&&tot.ampere>cap;
+        zb.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'8px 10px',marginBottom:'4px',borderRadius:'8px',background:over?'#fdf3f3':'#eef3fb',border:'1px solid '+(over?'#f0c9c9':'#d4e2f7')}},
+          h('span',{style:{fontSize:'15px',color:over?'#c0322a':'#2563eb',flex:'none'}},'\u2195'),
+          h('div',{style:{flex:'1',minWidth:0}},
+            h('div',{style:{fontSize:'12.5px',fontWeight:600,color:'#1c2024'}},(s.cable?s.cable.short:'Kabeltyp fehlt')+(s.len?' \u00b7 '+s.len.toString().replace('.',',')+' m':'')),
+            h('div',{style:{fontSize:'11px',color:'#6b7280',fontFamily:'var(--mono)'}},'von '+s.label+' \u00b7 '+s.floor+(cap?' \u00b7 \u2248 '+cap+' A':''))),
+          over?h('span',{title:'Zuleitung zu klein',style:{fontSize:'11px',fontWeight:700,color:'#c0322a',flex:'none'}},'\u26a0'):null)); }); }
+      else zb.appendChild(h('div',{style:{fontSize:'12px',color:'#9aa1a8',lineHeight:'1.5'}},'Keine Zuleitung. Lege auf einer anderen Etage einen Steigpunkt an und w\u00e4hle dort „F\u00fchrt zu UV: '+el.label+'".'));
+      zb.appendChild(h('div',{style:{fontSize:'11.5px',color:'#6b7280',fontFamily:'var(--mono)',marginTop:'6px'}},'UV-Last \u2248 '+tot.sumW+' W \u00b7 '+tot.ampere.toFixed(1).replace('.',',')+' A'));
+      wrap.appendChild(zb);
+      wrap.appendChild(h('button',{className:'tbtn',style:{width:'100%',justifyContent:'center',marginBottom:'14px'},onClick:()=>this.openVerteiler()},'Verteilerplan \u00f6ffnen'));
+    } else {
+      const partner=this.riserPartner(el);
+      const others=this.allRisers().filter(r=>r.id!==el.id&&r.floorId!==f.id);
+      const lsel=h('select',{className:'sel'});
+      lsel.appendChild(h('option',{value:''},'\u2014 nicht verkn\u00fcpft \u2014'));
+      others.forEach(r=>lsel.appendChild(h('option',{value:r.id},(r.label||'Steigpunkt')+' \u00b7 '+r.floorName)));
+      lsel.value=el.riserLink||''; lsel.addEventListener('change',e=>this.setRiserLink(el,e.target.value));
+      wrap.appendChild(this.field('Verkn\u00fcpfter Steigpunkt (andere Etage)',lsel));
+      if(!others.length&&!partner)wrap.appendChild(h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',lineHeight:'1.5',marginTop:'-8px',marginBottom:'12px'}},'Lege auf einer anderen Etage einen weiteren Steigpunkt an, um beide zu einem Strang zu verbinden.'));
+      if(partner){
+        wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'9px',background:'#eef3fb',border:'1px solid #d4e2f7',borderRadius:'9px',padding:'9px 11px',marginBottom:'12px'}},
+          h('span',{style:{fontSize:'18px',color:'#2563eb',flex:'none',lineHeight:1}},'\u2195'),
+          h('div',{style:{flex:'1',minWidth:0}},
+            h('div',{style:{fontSize:'12.5px',fontWeight:600,color:'#1c2024'}},'Strang mit '+(partner.el.label||'Steigpunkt')),
+            h('div',{style:{fontSize:'11px',color:'#6b7280',fontFamily:'var(--mono)'}},partner.floor.name)),
+          h('button',{className:'tbtn',style:{height:'30px',padding:'0 10px',flex:'none'},onClick:()=>this.jumpToRiser(partner)},'Gegenstelle')));
+      }
+      const rl=h('input',{className:'inp',inputmode:'decimal',style:{fontFamily:'var(--mono)'},placeholder:'z. B. 4,5'}); rl.value=el.riserLen||''; rl.addEventListener('input',e=>this.setRiserLen(el,e.target.value));
+      wrap.appendChild(this.field(partner?'Steigl\u00e4nge des Strangs (m) \u2014 beidseitig':'Steigl\u00e4nge bis zum Ziel-UV (m)',rl));
+      const csel2=h('select',{className:'sel'}); csel2.appendChild(h('option',{value:''},'\u2014 Kabeltyp w\u00e4hlen \u2014')); CABLE_TYPES.forEach(ct=>csel2.appendChild(h('option',{value:ct.id},ct.name))); csel2.value=el.riserCable||''; csel2.addEventListener('change',e=>this.setRiserField(el,'riserCable',e.target.value));
+      wrap.appendChild(this.field(partner?'Kabeltyp der Steigleitung \u2014 beidseitig':'Kabeltyp der Steigleitung',csel2));
+      const uvs=this.allUVs();
+      const usel=h('select',{className:'sel'}); usel.appendChild(h('option',{value:''},'\u2014 nicht zugeordnet \u2014')); uvs.forEach(u=>usel.appendChild(h('option',{value:u.id},u.label+' ('+u.floor+')'))); usel.value=el.riserUv||''; usel.addEventListener('change',e=>this.editEl('riserUv',e.target.value));
+      wrap.appendChild(this.field('F\u00fchrt zu Unterverteiler',usel));
+      wrap.appendChild(h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',lineHeight:'1.5',marginBottom:'14px'}},partner
+        ?'Beide Steigpunkte teilen sich eine Steigl\u00e4nge \u2014 sie wird im Stromkreis nur einmal gez\u00e4hlt, egal ob ein Kabel oben oder unten am Strang endet.'
+        :'Kabel, die an diesem Steigpunkt enden, bekommen die hinterlegte Steigl\u00e4nge automatisch zur Gesamtl\u00e4nge addiert \u2014 so stimmt der Weg bis zum UV in der anderen Etage.'));
+    }
+    const note=h('textarea',{className:'inp',rows:2,style:{resize:'vertical'}});note.value=el.note||'';note.addEventListener('input',e=>this.editEl('note',e.target.value));
+    wrap.appendChild(this.field('Notiz',note));
+    wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+      h('span',{style:{fontSize:'12px',color:'#6b7280',flex:'1'}},'Drehung '+((el.rot||0)+'\u00b0')),
+      h('button',{className:'tbtn',style:{width:'34px',padding:'0',justifyContent:'center',height:'32px'},onClick:()=>this.rotEl(-45)},'\u27f2'),
+      h('button',{className:'tbtn',style:{width:'34px',padding:'0',justifyContent:'center',height:'32px'},onClick:()=>this.rotEl(45)},'\u27f3'),
+      h('button',{className:'tbtn',style:{height:'32px',color:'#c0322a',borderColor:'#f0c9c9',background:'#fdf3f3'},onClick:()=>this.deleteSelected()},'L\u00f6schen')));
+  },
+  renderProps(){
+    const el=this.selEl(), cab=this.selCab(), room=this.selRoom(), wrap=h('div',{style:{padding:'16px'}}), f=this.fl();
+    if(el&&this.st.selEls.length<=1&&(el.type==='unterverteiler'||el.type==='durchfuehrung')){ this._verteilerElPanel(wrap,el,f); dom.rightBody.appendChild(wrap); return; }
+    if(this.st.selEls.length>1){ this._groupPanel(wrap,f); } else if(el){
+      wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}},
+        h('span',{style:{width:'34px',height:'34px',borderRadius:'8px',background:'#f1f3f5',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},makeIcon(el.type,this.circColor(el.circuit))),
+        h('div',null,h('div',{style:{fontSize:'14px',fontWeight:600}},(TYPES[el.type]||{name:el.type}).name),h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},'x '+el.x+'  ·  y '+el.y))));
+      const inp=(val,fl,ph)=>{const i=h('input',{className:'inp',placeholder:ph||''});i.value=val||'';i.addEventListener('input',e=>this.editEl(fl,e.target.value));return i;};
+      wrap.appendChild(this.field('Bezeichnung / Nummer',inp(el.label,'label')));
+      wrap.appendChild(this.field('Typ / Modell',inp(el.model,'model','z. B. LED-Downlight 24W')));
+      const selField=(label,opts,val,fn,labels)=>{const s=h('select',{className:'sel'});opts.forEach((o,i)=>s.appendChild(h('option',{value:o},labels?labels[i]:(o===''?'—':o))));s.value=val==null?'':String(val);s.addEventListener('change',e=>fn(e.target.value));return this.field(label,s);};
+      const NUMS=['1','2','3','4','5','6'];
+      if(/^steckdose/.test(el.type)&&el.type!=='steckdose_stark')wrap.appendChild(selField('Ausführung (Fach)',NUMS,String(gangOf(el)||1),v=>this.editEl('gang',v),NUMS.map(n=>n+'-fach')));
+      if(el.type==='taster'||el.type==='taster4')wrap.appendChild(selField('Tasten',NUMS,String(tastenOf(el)||1),v=>this.editEl('tasten',v),NUMS.map(n=>n+'-fach')));
+      if(el.type==='schalter'||el.type==='taster'||el.type==='taster4')wrap.appendChild(selField('Schaltungsart',SCHALTUNGEN,el.schaltung,v=>this.editEl('schaltung',v)));
+      if(WALL_TYPES.has(el.type))wrap.appendChild(selField('Schutzart (IP)',IP_OPTIONS,el.ip,v=>this.editEl('ip',v)));
+      const watt=h('input',{className:'inp',inputmode:'decimal',style:{fontFamily:'var(--mono)'}});watt.value=el.watt||'';watt.addEventListener('input',e=>this.editEl('watt',e.target.value));
+      const dim=h('input',{className:'inp',placeholder:'—'});dim.value=el.dim||'';dim.addEventListener('input',e=>this.editEl('dim',e.target.value));
+      wrap.appendChild(h('div',{style:{display:'flex',gap:'10px',marginBottom:'12px'}},h('div',{style:{flex:'1'}},h('label',{className:'field-label'},'Leistung (W)'),watt),h('div',{style:{flex:'1'}},h('label',{className:'field-label',title:'Leuchten mit derselben Dimmgruppe hängen am selben Dimmer und werden gemeinsam gedimmt. Frei wählbarer Name/Nummer, z. B. „Wohnen“ oder „1“.'},'Dimmgruppe ⓘ'),dim)));
+      if(WALL_TYPES.has(el.type)){const dh=DEFAULT_HEIGHT[el.type];const hgt=h('input',{className:'inp',inputmode:'decimal',style:{fontFamily:'var(--mono)'},placeholder:dh?dh+' (üblich)':'z. B. 30'});hgt.value=el.height||'';hgt.addEventListener('input',e=>this.editEl('height',e.target.value));wrap.appendChild(this.field('Montagehöhe Dose (cm) ab OK Fertigfußboden',hgt));}
+      const csel=h('select',{className:'sel'});this.st.circuits.forEach(c=>csel.appendChild(h('option',{value:c.id},c.name)));csel.value=el.circuit;csel.addEventListener('change',e=>this.editEl('circuit',e.target.value));
+      wrap.appendChild(this.field('Stromkreis',csel));
+      const note=h('textarea',{className:'inp',rows:2,style:{resize:'vertical'}});note.value=el.note||'';note.addEventListener('input',e=>this.editEl('note',e.target.value));
+      wrap.appendChild(this.field('Notiz',note));
+      wrap.appendChild(selField('Status',STATUS_OPTIONS,el.status||'Geplant',v=>this.editEl('status',v)));
+      const conns=f.cables.filter(c=>c.fromEl===el.id||c.toEl===el.id);
+      const cb=h('div',{style:{marginBottom:'14px'}}); cb.appendChild(h('label',{className:'field-label'},'Verbindungen ('+conns.length+')'));
+      if(conns.length){ conns.forEach(c=>{ const otherId=c.fromEl===el.id?c.toEl:c.fromEl; const other=otherId?f.elements.find(e=>e.id===otherId):null; const ct=CABLE_BY_ID[c.cableType]; cb.appendChild(h('div',{className:'row',style:{padding:'6px 9px',marginBottom:'4px',cursor:'pointer'},onClick:()=>{this.st.selEls=[];this.st.selected={kind:'cable',id:c.id};this.allRender();}},h('span',{className:'dot',style:{background:this.circColor(c.circuit),width:'9px',height:'9px'}}),h('span',{style:{flex:'1',fontSize:'12.5px'}},(ct?ct.short:'Kabel')+' → '+(other?other.label:'offenes Ende')),h('span',{style:{fontSize:'11.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},this.fmtLen(this.cableLenPx(c.points))||''))); }); }
+      else cb.appendChild(h('div',{style:{fontSize:'12px',color:'#9aa1a8',lineHeight:'1.5'}},'Noch nicht verbunden. Zeichne mit dem Kabelweg-Werkzeug von hier zu einem anderen Element.'));
+      wrap.appendChild(cb);
+      wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+        h('span',{style:{fontSize:'12px',color:'#6b7280',flex:'1'}},'Drehung '+((el.rot||0)+'°')),
+        h('button',{className:'tbtn',style:{width:'34px',padding:'0',justifyContent:'center',height:'32px'},onClick:()=>this.rotEl(-45)},'⟲'),
+        h('button',{className:'tbtn',style:{width:'34px',padding:'0',justifyContent:'center',height:'32px'},onClick:()=>this.rotEl(45)},'⟳'),
+        h('button',{className:'tbtn',style:{height:'32px',color:'#c0322a',borderColor:'#f0c9c9',background:'#fdf3f3'},onClick:()=>this.deleteSelected()},'Löschen')));
+    } else if(cab){
+      const ct=CABLE_BY_ID[cab.cableType]; const elLbl=id=>{const e=f.elements.find(e=>e.id===id);return e?e.label:'offenes Ende';};
+      wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}},
+        h('span',{style:{width:'34px',height:'34px',borderRadius:'8px',background:'#f1f3f5',display:'flex',alignItems:'center',justifyContent:'center',flex:'none',fontSize:'18px'}},'⌇'),
+        h('div',null,h('div',{style:{fontSize:'14px',fontWeight:600}},'Kabelweg'),h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},cab.points.length+' Punkte'))));
+      wrap.appendChild(h('div',{style:{background:'#f6f7f8',borderRadius:'9px',padding:'13px 14px',marginBottom:'14px'}},
+        h('div',{style:{fontSize:'11px',color:'#9aa1a8',fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase'}},'Länge'),
+        h('div',{style:{fontSize:'24px',fontWeight:600,fontFamily:'var(--mono)',marginTop:'2px'}},this.fmtLen(this.cableLenPx(cab.points))||'— (Maßstab setzen)')));
+      wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'14px',fontSize:'12.5px',color:'#374151'}},
+        h('span',{style:{flex:'1'}},'Verbindung'),h('span',{style:{fontFamily:'var(--mono)',fontWeight:600}},elLbl(cab.fromEl)+'  →  '+elLbl(cab.toEl))));
+      const tsel=h('select',{className:'sel'});CABLE_TYPES.forEach(c=>tsel.appendChild(h('option',{value:c.id},c.name)));tsel.value=cab.cableType;tsel.addEventListener('change',e=>this.editCab('cableType',e.target.value));
+      wrap.appendChild(this.field('Kabeltyp',tsel));
+      const csel=h('select',{className:'sel'});this.st.circuits.forEach(c=>csel.appendChild(h('option',{value:c.id},c.name)));csel.value=cab.circuit;csel.addEventListener('change',e=>this.editCab('circuit',e.target.value));
+      wrap.appendChild(this.field('Stromkreis',csel));
+      wrap.appendChild(h('div',{style:{display:'flex',gap:'8px',marginBottom:'14px'}},
+        h('button',{className:'tbtn',style:{flex:'1',justifyContent:'center'},onClick:()=>this.editCab('dashed',!cab.dashed)},cab.dashed?'Linie: gestrichelt':'Linie: durchgezogen'),
+        h('button',{className:'tbtn',style:{flex:'1',justifyContent:'center',color:'#c0322a',borderColor:'#f0c9c9',background:'#fdf3f3'},onClick:()=>this.deleteSelected()},'Löschen')));
+      wrap.appendChild(h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',lineHeight:'1.5'}},'Tipp: bei ausgewähltem Kabel die Punkte ziehen, um den Verlauf anzupassen.'));
+    } else if(room){
+      const rt=ROOM_TYPES[room.type]||ROOM_TYPES.sonstiges; const a=this.roomAreaM2(room);
+      const inside=f.elements.filter(e=>{const ro=this.roomOf(e);return ro&&ro.id===room.id;});
+      const nSteck=inside.reduce((s,e)=>s+socketUnits(e),0);
+      const nLicht=inside.filter(e=>/^lichtquelle/.test(e.type)).length;
+      wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}},
+        h('span',{style:{width:'34px',height:'34px',borderRadius:'8px',background:rt.color+'22',display:'flex',alignItems:'center',justifyContent:'center',flex:'none'}},h('span',{style:{width:'15px',height:'15px',borderRadius:'4px',background:rt.color}})),
+        h('div',null,h('div',{style:{fontSize:'14px',fontWeight:600}},'Raum'),h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},(a?a.toFixed(1)+' m²  ·  ':'')+room.points.length+' Ecken'))));
+      const nameI=h('input',{className:'inp'});nameI.value=room.name||'';nameI.addEventListener('input',e=>this.editRoom('name',e.target.value));
+      wrap.appendChild(this.field('Bezeichnung',nameI));
+      const tsel=h('select',{className:'sel'});ROOM_TYPE_KEYS.forEach(k=>tsel.appendChild(h('option',{value:k},ROOM_TYPES[k].name)));tsel.value=room.type;tsel.addEventListener('change',e=>this.editRoom('type',e.target.value));
+      wrap.appendChild(this.field('Raumtyp',tsel));
+      const tags=[]; if(rt.feucht)tags.push('RCD-Pflicht (Feuchtraum)'); if(rt.schlaf)tags.push('Rauchmelderpflicht'); if(rt.rettung)tags.push('Rauchmelder (Rettungsweg)');
+      if(tags.length)wrap.appendChild(h('div',{style:{display:'flex',flexWrap:'wrap',gap:'5px',margin:'-4px 0 14px'}},tags.map(t=>h('span',{style:{fontSize:'11px',fontWeight:600,color:rt.color,background:rt.color+'18',borderRadius:'5px',padding:'3px 7px'}},t))));
+      wrap.appendChild(h('div',{style:{display:'flex',gap:'8px',marginBottom:'14px'}},
+        h('div',{className:'stat'},h('div',{className:'k'},'Steckdosen'),h('div',{className:'v',style:{color:rt.minSteckdosen&&nSteck<rt.minSteckdosen?'#c0322a':'#1c2024'}},nSteck+(rt.minSteckdosen?(' / '+rt.minSteckdosen):''))),
+        h('div',{className:'stat'},h('div',{className:'k'},'Leuchten'),h('div',{className:'v'},nLicht)),
+        h('div',{className:'stat'},h('div',{className:'k'},'Elemente'),h('div',{className:'v'},inside.length))));
+      wrap.appendChild(h('div',{style:{fontSize:'11.5px',color:'#9aa1a8',lineHeight:'1.5',marginBottom:'14px'}},'Elemente werden automatisch über ihre Lage diesem Raum zugeordnet. Ziehe die Eckpunkte, um den Zuschnitt anzupassen.'));
+      wrap.appendChild(h('div',{style:{display:'flex',gap:'8px'}},
+        h('button',{className:'tbtn',style:{flex:'1',justifyContent:'center'},onClick:()=>{this.st.rightTab='check';this.renderRight();}},'Prüfung öffnen'),
+        h('button',{className:'tbtn',style:{justifyContent:'center',color:'#c0322a',borderColor:'#f0c9c9',background:'#fdf3f3'},onClick:()=>this.deleteSelected()},'Löschen')));
+    } else {
+      wrap.appendChild(h('div',{style:{padding:'30px 8px',textAlign:'center'}},h('div',{style:{fontSize:'13.5px',color:'#9aa1a8',lineHeight:'1.6'}},'Nichts ausgewählt.',h('br'),'Wähle links ein Werkzeug, um Elemente zu setzen oder Kabelwege zu zeichnen — oder klicke ein Element an, um es zu bearbeiten.')));
+    }
+    dom.rightBody.appendChild(wrap);
+  },
+  renderList(){
+    const f=this.fl(), st=this.st, wrap=h('div',{style:{padding:'14px 16px'}});
+    const totalWatt=f.elements.reduce((s,e)=>s+(parseFloat(e.watt)||0),0);
+    wrap.appendChild(h('div',{style:{fontSize:'10.5px',fontWeight:700,letterSpacing:'.06em',color:'#9aa1a8',marginBottom:'8px'}},'ETAGE: '+f.name.toUpperCase()));
+    wrap.appendChild(h('div',{style:{display:'flex',gap:'8px',marginBottom:'16px'}},
+      h('div',{className:'stat'},h('div',{className:'k'},'Elemente'),h('div',{className:'v'},f.elements.length)),
+      h('div',{className:'stat'},h('div',{className:'k'},'Last gesamt'),h('div',{className:'v'},totalWatt?totalWatt+' W':'0 W'))));
+    wrap.appendChild(h('div',{style:{fontSize:'10.5px',fontWeight:700,letterSpacing:'.06em',color:'#9aa1a8',marginBottom:'8px'}},'JE STROMKREIS'));
+    const cg=h('div',{style:{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'20px'}});
+    st.circuits.forEach(c=>{
+      const watt=f.elements.filter(e=>e.circuit===c.id).reduce((s,e)=>s+(parseFloat(e.watt)||0),0);
+      const lenpx=f.cables.filter(k=>k.circuit===c.id).reduce((s,k)=>s+this.cableLenPx(k.points),0);
+      const conns=f.cables.filter(k=>k.circuit===c.id&&k.fromEl&&k.toEl).length;
+      cg.appendChild(h('div',{className:'row',style:{opacity:c.hidden?0.45:1}},h('span',{className:'dot',style:{background:c.color}}),
+        h('span',{style:{flex:'1',fontSize:'13px',fontWeight:500}},c.name),
+        h('span',{style:{fontSize:'11px',color:'#9aa1a8',fontFamily:'var(--mono)'}},conns+' Verb.'),
+        h('span',{style:{fontSize:'12px',color:'#6b7280',fontFamily:'var(--mono)'}},watt?watt+' W':'—'),
+        h('span',{style:{fontSize:'12px',color:'#9aa1a8',fontFamily:'var(--mono)',minWidth:'54px',textAlign:'right'}},f.scalePxPerM?(lenpx/f.scalePxPerM).toFixed(1)+' m':'—')));
+    });
+    wrap.appendChild(cg);
+    const totalLenPx=f.cables.reduce((s,k)=>s+this.cableLenPx(k.points),0);
+    wrap.appendChild(h('div',{style:{display:'flex',alignItems:'center',marginBottom:'8px'}},h('span',{style:{fontSize:'10.5px',fontWeight:700,letterSpacing:'.06em',color:'#9aa1a8',flex:'1'}},'KABEL JE TYP'),h('span',{style:{fontSize:'11.5px',color:'#6b7280',fontFamily:'var(--mono)'}},'Σ '+(f.scalePxPerM?(totalLenPx/f.scalePxPerM).toFixed(1)+' m':'—'))));
+    if(!f.cables.length)wrap.appendChild(h('div',{style:{fontSize:'13px',color:'#9aa1a8',padding:'0 4px 18px'}},'Noch keine Kabelwege gezeichnet.'));
+    const kg=h('div',{style:{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'20px'}});
+    CABLE_TYPES.forEach(ct=>{const list=f.cables.filter(k=>k.cableType===ct.id);if(!list.length)return;const px=list.reduce((s,k)=>s+this.cableLenPx(k.points),0);kg.appendChild(h('div',{className:'row'},h('span',{style:{flex:'1',fontSize:'13px',fontWeight:500}},ct.name),h('span',{style:{fontSize:'11.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},list.length+'×'),h('span',{style:{fontSize:'12px',color:'#6b7280',fontFamily:'var(--mono)',minWidth:'54px',textAlign:'right'}},f.scalePxPerM?(px/f.scalePxPerM).toFixed(1)+' m':'—')));});
+    wrap.appendChild(kg);
+    wrap.appendChild(h('div',{style:{fontSize:'10.5px',fontWeight:700,letterSpacing:'.06em',color:'#9aa1a8',marginBottom:'8px'}},'ALLE ELEMENTE'));
+    if(!f.elements.length)wrap.appendChild(h('div',{style:{fontSize:'13px',color:'#9aa1a8',padding:'14px 4px'}},'Noch keine Elemente platziert.'));
+    const eg=h('div',{style:{display:'flex',flexDirection:'column',gap:'1px'}});
+    f.elements.forEach(e=>{const isSel=this.isElSel(e.id)||(st.selected&&st.selected.id===e.id);eg.appendChild(h('div',{className:'listrow',style:{background:isSel?'#eef1f4':'transparent',opacity:this.isHidden(e.circuit)?0.5:1},onClick:()=>{this.st.selEls=[e.id];this.st.selected={kind:'element',id:e.id};this.st.rightTab='props';this.allRender();}},h('span',{style:{width:'9px',height:'9px',borderRadius:'2px',flex:'none',background:this.circColor(e.circuit)}}),h('span',{style:{fontFamily:'var(--mono)',fontSize:'12.5px',fontWeight:600,minWidth:'42px'}},e.label),h('span',{style:{flex:'1',fontSize:'12.5px',color:'#374151',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},(TYPES[e.type]||{name:e.type}).name+(e.model?' · '+e.model:'')),h('span',{style:{fontSize:'11.5px',color:'#9aa1a8',fontFamily:'var(--mono)'}},e.watt?e.watt+' W':''),h('span',{title:'Status: '+(e.status||'Geplant'),style:{width:'8px',height:'8px',borderRadius:'50%',flex:'none',background:STATUS_COLOR[e.status||'Geplant']}})));});
+    wrap.appendChild(eg);
+    dom.rightBody.appendChild(wrap);
+  },
+
+  renderCircuits(){
+    clear(dom.circuitList);
+    const st=this.st, f=this.fl();
+    st.circuits.forEach(c=>{
+      const active=st.activeCircuit===c.id;
+      const cnt=f.elements.filter(e=>e.circuit===c.id).length+f.cables.filter(k=>k.circuit===c.id).length;
+      const row=h('div',{style:{display:'flex',alignItems:'center',gap:'7px',padding:'5px 7px',borderRadius:'7px',background:active?'#eef1f4':'transparent',boxShadow:active?('inset 0 0 0 1px '+c.color+'55'):'none',opacity:c.hidden?0.55:1}});
+      row.appendChild(h('button',{className:'iconbtn',title:c.hidden?'Einblenden':'Ausblenden',style:{color:c.hidden?'#b4bac0':'#6b7280'},onClick:()=>this.toggleHide(c.id)},eyeIcon(!c.hidden)));
+      row.appendChild(h('button',{title:'Farbe wechseln',style:{width:'16px',height:'16px',borderRadius:'4px',border:'1px solid rgba(0,0,0,.12)',cursor:'pointer',flex:'none',background:c.color},onClick:()=>this.cycleColor(c.id)}));
+      row.style.cursor='pointer';
+      const name=h('input',{title:'Doppelklick oder Rechtsklick zum Umbenennen',style:{flex:'1',border:'0',borderBottom:'1px dashed transparent',background:'transparent',fontSize:'13px',fontWeight:500,color:'#1c2024',outline:'none',minWidth:'0',padding:'2px 0',cursor:'text'}});name.value=c.name;
+      name.addEventListener('input',e=>this.renameCircuit(c.id,e.target.value));
+      name.addEventListener('blur',()=>{name.style.borderBottomColor='transparent';this.validateCircuitName(c.id);});
+      name.addEventListener('focus',()=>{name.style.borderBottomColor=c.color;});
+      name.addEventListener('mouseenter',()=>{if(document.activeElement!==name)name.style.borderBottomColor='#cdd2d7';});
+      name.addEventListener('mouseleave',()=>{if(document.activeElement!==name)name.style.borderBottomColor='transparent';});
+      name.addEventListener('dblclick',()=>name.select());
+      name.addEventListener('keydown',e=>{if(e.key==='Enter')name.blur();});
+      row.appendChild(name);
+      row.appendChild(h('span',{title:'Als aktiven Stromkreis wählen',style:{fontSize:'11px',color:'#9aa1a8',fontFamily:'var(--mono)',cursor:'pointer'},onClick:()=>this.setActiveCircuit(c.id)},cnt));
+      if(st.circuits.length>1)row.appendChild(h('button',{className:'iconbtn',title:'Stromkreis löschen',style:{fontSize:'15px',width:'18px',height:'18px'},onClick:()=>this.delCircuit(c.id)},'×'));
+      row.addEventListener('click',e=>{ if(e.target.closest('input,button'))return; this.setActiveCircuit(c.id); });
+      row.addEventListener('contextmenu',e=>{ e.preventDefault(); this.showCtx(e.clientX,e.clientY,[
+        {label:'Umbenennen',fn:()=>{name.focus();name.select();}},
+        {label:'Farbe wechseln',fn:()=>this.cycleColor(c.id)},
+        {label:c.hidden?'Einblenden':'Ausblenden',fn:()=>this.toggleHide(c.id)},
+        {label:'Als aktiv setzen',fn:()=>this.setActiveCircuit(c.id)},
+      ].concat(st.circuits.length>1?[{sep:true},{label:'Stromkreis löschen',danger:true,fn:()=>this.delCircuit(c.id)}]:[])); });
+      dom.circuitList.appendChild(row);
+    });
+  },
+
+  wire(){
+    dom.area.addEventListener('pointerdown',e=>this.onDown(e));
+    dom.area.addEventListener('pointermove',e=>this.onMove(e));
+    dom.area.addEventListener('pointerup',e=>this.onUp(e));
+    dom.area.addEventListener('dblclick',e=>this.onDbl(e));
+    dom.area.addEventListener('contextmenu',e=>this.onContext(e));
+    dom.area.addEventListener('wheel',e=>this.onWheel(e),{passive:false});
+    window.addEventListener('keydown',e=>this.onKey(e));
+    window.addEventListener('keyup',e=>{if(e.code==='Space'){this._space=false;this.updateCursor();}});
+    $('#zIn').onclick=()=>this.zoomBy(1.25); $('#zOut').onclick=()=>this.zoomBy(0.8); $('#zFit').onclick=()=>this.fit();
+    $('#tabProps').onclick=()=>{this.st.rightTab='props';this.renderRight();}; $('#tabList').onclick=()=>{this.st.rightTab='list';this.renderRight();}; $('#tabCheck').onclick=()=>{this.st.rightTab='check';this.renderRight();};
+    $('#addCircuit').onclick=()=>this.addCircuit();
+    $('#btnUndo').onclick=()=>this.undo(); $('#btnRedo').onclick=()=>this.redo(); $('#btnPng').onclick=()=>this.exportPng(); $('#btnCsv').onclick=()=>this.exportCsv(); $('#btnPrint').onclick=()=>window.print();
+    $('#btnVerteiler').onclick=()=>this.openVerteiler();
+    $('#btnSection').onclick=()=>this.openSection();
+    $('#btnLegend').onclick=()=>this.openLegend();
+    $('#mobLeft').onclick=()=>this.toggleDrawer('left'); $('#mobRight').onclick=()=>this.toggleDrawer('right'); dom.scrim.onclick=()=>this.closeDrawers();
+    $('#opacity').addEventListener('input',e=>{this.fl().planOpacity=parseFloat(e.target.value);dom.img.style.opacity=this.fl().planOpacity;this.persist();});
+    $('#btnImport').onclick=()=>dom.file.click();
+    dom.drop.onclick=()=>dom.file.click();
+    dom.file.addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(f)this.importPlan(f);dom.file.value='';});
+    ['dragenter','dragover'].forEach(ev=>dom.area.addEventListener(ev,e=>{e.preventDefault();dom.drop.classList.add('over');if(this.fl().planURL)dom.drop.style.display='flex';}));
+    dom.area.addEventListener('dragleave',e=>{e.preventDefault();dom.drop.classList.remove('over');if(this.fl().planURL)dom.drop.style.display='none';});
+    dom.area.addEventListener('drop',e=>{e.preventDefault();dom.drop.classList.remove('over');const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)this.importPlan(f);else if(this.fl().planURL)dom.drop.style.display='none';});
+  },
+};
+window.addEventListener('DOMContentLoaded',()=>App.init());
+})();
+</script>
+</body>
+</html>
